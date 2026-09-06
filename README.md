@@ -4,7 +4,7 @@
 
 Aplicación web para el control de las mantenciones y revisiones periódicas del material menor de la Octava Compañía del Cuerpo de Bomberos de Talcahuano.
 
-Proyecto APT desarrollado en la asignatura Capstone (PTY4614), Ingeniería en Informática mención Desarrollo de Software, Duoc UC Sede San Andrés.
+Proyecto APT desarrollado en la asignatura Capstone (PTY4614), Ingeniería en Informática, Duoc UC Sede San Andrés.
 
 ---
 
