@@ -50,7 +50,6 @@ El aporte de valor es que la jefatura pueda conocer el estado real de cada equip
 - Material mayor y vehículos.
 - Integración con sistemas externos.
 - Aplicación móvil nativa.
-- Control de compras o finanzas.
 
 ---
 
