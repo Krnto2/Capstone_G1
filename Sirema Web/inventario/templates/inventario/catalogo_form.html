@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{{ volver }}">Administración</a></div><h1>{{ titulo }}</h1></div></div>
+<div class="tarjeta">
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% for f in form %}{% campo f %}{% endfor %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar</button>
+      <a class="btn btn-outline-negro btn-touch" href="{{ volver }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

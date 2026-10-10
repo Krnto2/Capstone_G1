@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Finalizar revisión{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div>
+  <div class="ceja"><a href="{% url 'revisiones:ejecutar' revision.pk %}"><i class="bi bi-chevron-left" aria-hidden="true"></i> {{ revision.material.nombre }}</a></div>
+  <h1>Finalizar revisión</h1></div></div>
+
+<div class="resultado-global {{ resumen.resultado_global }} mb-3">
+  <div class="ceja">Resultado global</div>
+  <div class="valor">{% if resumen.resultado_global == 'falla' %}<i class="bi bi-x-circle" aria-hidden="true"></i> Falla{% elif resumen.resultado_global == 'observacion' %}<i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Observación{% else %}<i class="bi bi-check-circle" aria-hidden="true"></i> Conforme{% endif %}</div>
+  <div>{{ resumen.respondidos }} de {{ resumen.total }} puntos · {{ resumen.fallas }} falla{{ resumen.fallas|pluralize }} · {{ resumen.observaciones }} observaci{{ resumen.observaciones|pluralize:"ón,ones" }} · {{ resumen.fotografias }} fotografía{{ resumen.fotografias|pluralize }}</div>
+</div>
+
+<form method="post" novalidate class="tarjeta">{% csrf_token %}
+  {% include "componentes/_errores_formulario.html" %}
+  {% if es_falla %}
+    <h2 class="h5 fw-bold">Registrar hallazgo</h2>
+    <p class="text-body-secondary">Una revisión con falla no se puede finalizar sin describir el hallazgo.</p>
+    {% campo form.descripcion "Descripción" %}
+    <fieldset class="mb-3">
+      <legend class="form-label fs-6">Criticidad</legend>
+      <div class="segmentado">
+        {% for opcion in form.criticidad %}
+          <input type="radio" name="{{ form.criticidad.html_name }}" id="crit-{{ opcion.data.value }}" value="{{ opcion.data.value }}" {% if opcion.data.selected %}checked{% endif %}>
+          <label for="crit-{{ opcion.data.value }}">{{ opcion.choice_label }}</label>
+        {% endfor %}
+      </div>
+      {% if form.criticidad.errors %}<ul class="errorlist">{% for e in form.criticidad.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </fieldset>
+    <div class="aviso-inline mb-3"><i class="bi bi-bell" aria-hidden="true"></i> Se notificará a la jefatura y el hallazgo quedará abierto en el panel y en la ficha del elemento.</div>
+  {% endif %}
+  {% campo form.observaciones %}
+  <p class="small text-body-secondary"><i class="bi bi-person-check" aria-hidden="true"></i> Ejecutada por {{ user.nombre_completo }} · {% if revision.fecha_hora_inicio %}{{ revision.fecha_hora_inicio|date:"d-m-Y H:i" }} a {% endif %}{% now "H:i" %}</p>
+  <p class="small text-body-secondary">Una revisión finalizada no se puede modificar.</p>
+  <div class="row g-2">
+    <div class="col-5"><a class="btn btn-outline-negro btn-lg w-100" href="{% url 'revisiones:ejecutar' revision.pk %}">Volver</a></div>
+    <div class="col-7"><button class="btn btn-sirema btn-lg w-100" type="submit">{% if es_falla %}Registrar y finalizar{% else %}Finalizar{% endif %}</button></div>
+  </div>
+</form>
+{% endblock %}

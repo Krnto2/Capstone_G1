@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Carga masiva{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'inventario:lista' %}">Inventario</a></div><h1>Carga masiva de material</h1></div></div>
+<div class="row g-3">
+  <div class="col-12 col-lg-5">
+    <div class="tarjeta">
+      <p>Adjunte una planilla <strong>CSV</strong> (separada por punto y coma o coma) o <strong>XLSX</strong>. Cada fila se valida con las mismas reglas del registro individual: las válidas se registran y las rechazadas se informan.</p>
+      <p class="small text-body-secondary mb-2">Columnas: {% for c in columnas %}<span class="mono">{{ c }}</span>{% if c in obligatorias %}*{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}. (*) obligatorias. La unidad se indica por su código (B-8) y la cajonera por su nombre.</p>
+      <a class="btn btn-link px-0" href="{% url 'inventario:plantilla' %}"><i class="bi bi-download" aria-hidden="true"></i> Descargar plantilla CSV</a>
+      <hr>
+      <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+        {% campo form.archivo %}
+        <button class="btn btn-sirema btn-touch" type="submit"><i class="bi bi-upload" aria-hidden="true"></i> Cargar planilla</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-12 col-lg-7">
+    {% if resultado %}
+      <div class="tarjeta">
+        <div class="tarjeta-titulo">Resultado de la carga</div>
+        <p><span class="badge-sirema estado-realizada">{{ resultado.registrados|length }} registrados</span>
+           <span class="badge-sirema {% if resultado.rechazados %}estado-vencida{% else %}estado-pendiente{% endif %}">{{ resultado.rechazados|length }} rechazados</span>
+           <span class="text-body-secondary small">de {{ resultado.total }} filas</span></p>
+        {% if resultado.rechazados %}
+          <div class="table-responsive">
+            <table class="table tabla-sirema small">
+              <thead><tr><th>Fila</th><th>Elemento</th><th>Motivo</th></tr></thead>
+              <tbody>{% for r in resultado.rechazados %}<tr><td>{{ r.fila }}</td><td>{{ r.nombre|default:"—" }}</td><td>{{ r.motivos|join:"; " }}</td></tr>{% endfor %}</tbody>
+            </table>
+          </div>
+        {% endif %}
+        {% if resultado.registrados %}
+          <details><summary class="fw-semibold">Ver elementos registrados</summary>
+            <ul class="mt-2">{% for m in resultado.registrados %}<li><a href="{% url 'inventario:detalle' m.pk %}">{{ m }}</a> · {{ m.cajonera }}</li>{% endfor %}</ul>
+          </details>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

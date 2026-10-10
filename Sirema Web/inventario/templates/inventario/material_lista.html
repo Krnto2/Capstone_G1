@@ -1,0 +1,68 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Inventario{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">{{ total_activos }} elementos activos</div><h1>Inventario</h1></div>
+  {% if 'material.registrar' in permisos %}
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-negro btn-touch" href="{% url 'inventario:importar' %}"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> Carga masiva</a>
+    <a class="btn btn-sirema btn-touch" href="{% url 'inventario:crear' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar material</a>
+  </div>
+  {% endif %}
+</div>
+
+<form class="tarjeta mb-3" method="get" role="search" data-filtros>
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-lg-4">{% campo filtro.q clase="mb-0" %}</div>
+    <div class="col-6 col-lg-2">{% campo filtro.unidad clase="mb-0" %}</div>
+    <div class="col-6 col-lg-2">{% campo filtro.cajonera clase="mb-0" %}</div>
+    <div class="col-6 col-lg-2">{% campo filtro.categoria clase="mb-0" %}</div>
+    <div class="col-6 col-lg-2">{% campo filtro.estado clase="mb-0" %}</div>
+  </div>
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-negro btn-touch" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Buscar</button>
+    <a class="btn btn-link" href="{% url 'inventario:lista' %}">Limpiar filtros</a>
+  </div>
+  {% if busqueda_corta %}<p class="small text-body-secondary mt-2 mb-0">Escriba al menos 2 caracteres para buscar por nombre o código.</p>{% endif %}
+</form>
+
+{# Celular: tarjetas #}
+<div class="d-lg-none">
+  {% for m in materiales %}
+    <a class="tarjeta-revision {% if not m.activo %}u-vencida{% endif %}" href="{% url 'inventario:detalle' m.pk %}">
+      <div class="d-flex justify-content-between gap-2">
+        <span class="titulo">{{ m.nombre }}</span>
+        {% if not m.activo %}<span class="badge-sirema estado-no-realizada">De baja</span>{% endif %}
+      </div>
+      <div class="meta"><span class="mono">{{ m.codigo_institucional|default:"s/c" }}</span> · {{ m.cajonera }}</div>
+      <div class="mt-1"><span class="chip">{{ m.categoria }}</span>{% if m.tipo == 'granel' %} <span class="chip">{{ m.cantidad }} u.</span>{% endif %}</div>
+    </a>
+  {% empty %}
+    <div class="tarjeta vacio"><i class="bi bi-box"></i>No se encontraron elementos.</div>
+  {% endfor %}
+</div>
+
+{# Escritorio: tabla #}
+<div class="tarjeta tarjeta-lista d-none d-lg-block">
+  <table class="table tabla-sirema">
+    <thead><tr><th class="ps-3">Código</th><th>Elemento</th><th>Categoría</th><th>Ubicación</th><th>Marca / modelo</th><th>Cant.</th><th>Estado</th><th class="pe-3"></th></tr></thead>
+    <tbody>
+    {% for m in materiales %}
+      <tr>
+        <td class="ps-3 mono fw-semibold">{{ m.codigo_institucional|default:"s/c" }}</td>
+        <td><a class="fw-semibold text-decoration-none" href="{% url 'inventario:detalle' m.pk %}">{{ m.nombre }}</a></td>
+        <td>{{ m.categoria }}</td>
+        <td>{{ m.cajonera }}</td>
+        <td>{{ m.marca|default:"" }} {{ m.modelo|default:"" }}</td>
+        <td>{{ m.cantidad }}</td>
+        <td>{% if m.activo %}<span class="badge-sirema estado-realizada">Activo</span>{% else %}<span class="badge-sirema estado-no-realizada">De baja</span>{% endif %}</td>
+        <td class="pe-3 acciones"><a class="btn btn-outline-negro btn-sm" href="{% url 'inventario:detalle' m.pk %}">Ver ficha</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8"><div class="vacio"><i class="bi bi-box"></i>No se encontraron elementos con esos filtros.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

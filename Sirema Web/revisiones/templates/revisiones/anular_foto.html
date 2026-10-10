@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Anular fotografía{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:detalle' foto.revision_id %}">{{ foto.revision }}</a></div><h1>Anular fotografía</h1></div></div>
+<div class="tarjeta">
+  <div class="row g-3">
+    <div class="col-sm-5"><img class="img-fluid rounded border" src="{% url 'revisiones:fotografia' foto.pk %}" alt="Fotografía a anular"></div>
+    <div class="col-sm-7">
+      <dl class="lista-datos small mb-0">
+        <dt>Punto</dt><dd>{{ foto.punto|default:"Fotografía general" }}</dd>
+        <dt>Cargada por</dt><dd>{{ foto.usuario.nombre_completo }} · {{ foto.fecha_hora_carga|date:"d-m-Y H:i" }}</dd>
+        <dt>Captura</dt><dd>{{ foto.fecha_hora_captura|date:"d-m-Y H:i" }}</dd>
+        <dt>SHA-256</dt><dd class="mono text-break fw-normal">{{ foto.hash_sha256 }}</dd>
+        <dt>Integridad</dt><dd>{% if integra %}<span class="badge-sirema resultado-conforme">El archivo coincide con su hash</span>{% else %}<span class="badge-sirema resultado-falla">El archivo no coincide o no está disponible</span>{% endif %}</dd>
+      </dl>
+    </div>
+  </div>
+  {% if foto.anulada %}
+    <div class="alert alert-secondary mt-3 mb-0">Esta fotografía ya está anulada.</div>
+  {% else %}
+  <hr>
+  <p class="text-body-secondary">La imagen no se elimina: queda marcada como anulada y el motivo, el usuario y la fecha se registran en la bitácora.</p>
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% campo form.motivo %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-danger btn-touch" type="submit">Anular fotografía</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:detalle' foto.revision_id %}">Cancelar</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

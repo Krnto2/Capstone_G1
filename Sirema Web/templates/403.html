@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Acceso no autorizado{% endblock %}
+{% block contenido %}
+<div class="tarjeta vacio contenido-angosto mx-auto mt-4">
+  <i class="bi bi-shield-lock"></i>
+  <h1 class="h4 fw-bold text-body">Acceso no autorizado</h1>
+  <p>Su rol no tiene permiso para esta función. Si cree que es un error, consulte al administrador de la compañía.</p>
+  <a class="btn btn-negro btn-touch" href="{% url 'inicio' %}">Volver al inicio</a>
+</div>
+{% endblock %}

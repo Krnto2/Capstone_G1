@@ -1,0 +1,59 @@
+{% load sirema %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte de cumplimiento SIREMA · {{ ind.filtros.periodo }}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 12mm; @bottom-right { content: "Página " counter(page) " de " counter(pages); font-size: 8pt; color: #555; } }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #15171c; margin: 0; }
+  header { border-bottom: 3px solid #111214; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+  h1 { font-size: 16pt; margin: 0; } .sub { color: #555; }
+  .kpis { display: flex; gap: 8px; margin: 8px 0 12px; }
+  .kpi { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: 6px 8px; }
+  .kpi b { display: block; font-size: 15pt; }
+  h2 { font-size: 11pt; margin: 12px 0 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #111214; color: #fff; text-align: left; padding: 4px 5px; font-size: 8pt; }
+  td { border-bottom: 1px solid #ddd; padding: 3px 5px; font-size: 8pt; vertical-align: top; }
+  .falla { color: #c02424; font-weight: bold; } .obs { color: #8f5300; font-weight: bold; } .ok { color: #17703d; font-weight: bold; }
+  .aviso { background: #fff7e0; border: 1px solid #e6c46e; padding: 8px 10px; margin-bottom: 10px; font-family: Arial, sans-serif; }
+  @media print { .aviso { display: none; } }
+</style>
+</head>
+<body>
+{% if para_imprimir %}<div class="aviso">Vista lista para imprimir: use <b>Ctrl + P → Guardar como PDF</b>. En el servidor del cuartel el PDF se descarga directamente.</div>{% endif %}
+<header>
+  <div><h1>Reporte de cumplimiento · SIREMA</h1><div class="sub">{{ ind.filtros.etiqueta }}</div></div>
+  <div class="sub">Octava Compañía del Cuerpo de Bomberos de Talcahuano<br>Generado el {{ generado|date:"d-m-Y H:i" }}</div>
+</header>
+<div class="kpis">
+  <div class="kpi">Cumplimiento del período<b>{{ ind.porcentaje|porcentaje }}</b>{{ ind.en_plazo }} de {{ ind.exigibles }} en plazo</div>
+  <div class="kpi">Revisiones vencidas<b class="falla">{{ ind.vencidas|length }}</b>{{ ind.detalle_vencidas|default:"Ninguna" }}</div>
+  <div class="kpi">Hallazgos abiertos<b class="obs">{{ ind.hallazgos_abiertos|length }}</b>{{ ind.hallazgos_alta }} de criticidad alta</div>
+  <div class="kpi">Elementos activos sin plan<b>{{ ind.sin_plan }}</b>de {{ ind.total_activos }} activos</div>
+</div>
+{% if ind.por_unidad %}
+<h2>Cumplimiento por unidad</h2>
+<table><thead><tr><th>Unidad</th><th>En plazo</th><th>Exigibles</th><th>%</th></tr></thead>
+<tbody>{% for f in ind.por_unidad %}<tr><td>{{ f.etiqueta }}</td><td>{{ f.en_plazo }}</td><td>{{ f.exigibles }}</td><td>{{ f.porcentaje|porcentaje }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+<h2>Revisiones del período</h2>
+<table>
+  <thead><tr><th>Código</th><th>Elemento</th><th>Ubicación</th><th>Plan</th><th>Responsable</th><th>Límite</th><th>Estado</th><th>Resultado</th><th>Ejecutada</th></tr></thead>
+  <tbody>
+  {% for r in revisiones %}
+    <tr><td>{{ r.material.codigo_institucional|default:"s/c" }}</td><td>{{ r.material.nombre }}</td><td>{{ r.material.cajonera }}</td><td>{{ r.plan }}</td>
+      <td>{{ r.usuario_responsable.nombre_corto }}</td><td>{{ r.fecha_limite|date:"d-m-Y" }}</td><td>{{ r.get_estado_display }}</td>
+      <td class="{% if r.resultado_global == 'falla' %}falla{% elif r.resultado_global == 'observacion' %}obs{% elif r.resultado_global %}ok{% endif %}">{{ r.get_resultado_global_display|default:"—" }}</td>
+      <td>{% if r.fecha_hora_termino %}{{ r.fecha_hora_termino|date:"d-m-Y H:i" }}{% if r.en_plazo is False %} (fuera de plazo){% endif %}{% else %}—{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="9">Sin revisiones con fecha límite en el período.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if ind.hallazgos_abiertos %}
+<h2>Hallazgos abiertos</h2>
+<table><thead><tr><th>Código</th><th>Elemento</th><th>Descripción</th><th>Criticidad</th><th>Estado</th><th>Apertura</th></tr></thead>
+<tbody>{% for h in ind.hallazgos_abiertos %}<tr><td>{{ h.revision.material.codigo_institucional|default:"s/c" }}</td><td>{{ h.revision.material.nombre }}</td><td>{{ h.descripcion }}</td><td>{{ h.get_criticidad_display }}</td><td>{{ h.get_estado_display }}</td><td>{{ h.fecha_apertura|date:"d-m-Y" }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if para_imprimir %}<script>window.addEventListener("load", function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}
+</body>
+</html>

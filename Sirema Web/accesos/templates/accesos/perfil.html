@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Mi perfil{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">{{ user.rol }}</div><h1>Mi perfil</h1></div></div>
+<div class="tarjeta">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <span class="avatar" style="width:56px;height:56px;font-size:1.1rem">{{ user.iniciales }}</span>
+    <div><div class="fw-bold fs-5">{{ user.nombre_completo }}</div><div class="text-body-secondary">{{ user.correo }}</div></div>
+  </div>
+  <dl class="row lista-datos mb-0">
+    <dt class="col-sm-4">RUT</dt><dd class="col-sm-8">{{ user.rut }}</dd>
+    <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">{{ user.telefono|default:"—" }}</dd>
+    <dt class="col-sm-4">Rol</dt><dd class="col-sm-8">{{ user.rol }}</dd>
+    <dt class="col-sm-4">Último acceso</dt><dd class="col-sm-8">{{ user.last_login|date:"d-m-Y H:i"|default:"—" }}</dd>
+  </dl>
+</div>
+<div class="tarjeta">
+  <div class="tarjeta-titulo">Seguridad</div>
+  <p class="text-body-secondary">La sesión se cierra tras 30 minutos sin actividad.</p>
+  <a class="btn btn-negro btn-touch" href="{% url 'accesos:cambiar_contrasena' %}"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a>
+</div>
+<div class="tarjeta d-lg-none">
+  <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
+    <button class="btn btn-outline-negro btn-touch w-100" type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Revisiones{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">Jefatura</div><h1>Revisiones</h1></div></div>
+<form class="tarjeta mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-3">{% campo filtro.q clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.estado clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.unidad clase="mb-0" %}</div>
+    <div class="col-12 col-md-2">{% campo filtro.responsable clase="mb-0" %}</div>
+    <div class="col-6 col-md-1">{% campo filtro.desde clase="mb-0" %}</div>
+    <div class="col-6 col-md-1">{% campo filtro.hasta clase="mb-0" %}</div>
+    <div class="col-12 col-md-1"><button class="btn btn-negro btn-touch w-100" type="submit" aria-label="Filtrar"><i class="bi bi-search"></i></button></div>
+  </div>
+</form>
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Elemento</th><th>Ubicación</th><th>Plan</th><th>Responsable</th><th>Fecha límite</th><th>Estado</th><th>Resultado</th><th class="pe-3"></th></tr></thead>
+      <tbody>
+      {% for r in revisiones %}
+        <tr>
+          <td class="ps-3"><span class="mono fw-semibold">{{ r.material.codigo_institucional|default:"s/c" }}</span> {{ r.material.nombre }}</td>
+          <td>{{ r.material.cajonera }}</td>
+          <td>{{ r.plan }}</td>
+          <td>{{ r.usuario_responsable.nombre_corto }}</td>
+          <td class="{% if r.urgencia == 'vencida' %}fecha-falla{% endif %}">{{ r.fecha_limite|date:"d-m-Y" }}</td>
+          <td>{{ r.estado|badge_estado }}</td>
+          <td>{% if r.resultado_global %}{{ r.resultado_global|badge_resultado }}{% else %}—{% endif %}</td>
+          <td class="pe-3 acciones"><a class="btn btn-outline-negro btn-sm" href="{% url 'revisiones:detalle' r.pk %}">Ver</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="vacio"><i class="bi bi-calendar2"></i>No hay revisiones con esos filtros.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

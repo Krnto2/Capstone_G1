@@ -1,0 +1,86 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Panel de cumplimiento{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">Reportes</div><h1>Panel de cumplimiento</h1></div>
+  {% include "reportes/_filtros.html" %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="kpi"><div class="etiqueta">Cumplimiento del período</div>
+      <div class="valor">{{ ind.porcentaje|porcentaje }}</div>
+      <div class="detalle">{% if ind.exigibles %}{{ ind.en_plazo }} de {{ ind.exigibles }} revisiones en plazo{% else %}Sin revisiones exigibles en el período{% endif %}</div></div>
+  </div>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <a class="kpi kpi-falla d-block text-decoration-none text-reset" href="#vencidas"><div class="etiqueta">Revisiones vencidas</div>
+      <div class="valor">{{ ind.vencidas|length }}</div>
+      <div class="detalle">{{ ind.detalle_vencidas|default:"Ninguna" }}</div></a>
+  </div>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <a class="kpi kpi-observacion d-block text-decoration-none text-reset" href="#hallazgos"><div class="etiqueta">Hallazgos abiertos</div>
+      <div class="valor">{{ ind.hallazgos_abiertos|length }}</div>
+      <div class="detalle">{{ ind.hallazgos_alta }} de criticidad alta</div></a>
+  </div>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <a class="kpi kpi-info d-block text-decoration-none text-reset" href="{% url 'revisiones:asignaciones' %}"><div class="etiqueta">Elementos activos sin plan</div>
+      <div class="valor">{{ ind.sin_plan }}</div>
+      <div class="detalle">de {{ ind.total_activos }} elementos activos</div></a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-5">
+    <div class="tarjeta h-100">
+      <div class="tarjeta-titulo">Cumplimiento por unidad</div>
+      {% for fila in ind.por_unidad %}
+        <div class="barra-fila">
+          <div class="d-flex justify-content-between mb-1"><span>{{ fila.etiqueta }}</span><strong>{{ fila.porcentaje|porcentaje }}</strong></div>
+          <div class="barra" role="img" aria-label="{{ fila.etiqueta }}: {{ fila.porcentaje|porcentaje }} ({{ fila.en_plazo }} de {{ fila.exigibles }})"><span style="width:{{ fila.porcentaje|stringformat:'.1f' }}%"></span></div>
+        </div>
+      {% empty %}
+        <p class="text-body-secondary">Aún no hay revisiones exigibles en el período.</p>
+      {% endfor %}
+      {% if ind.por_categoria %}
+        <div class="tarjeta-titulo mt-4">Por categoría</div>
+        {% for fila in ind.por_categoria %}
+          <div class="d-flex justify-content-between border-bottom py-1"><span>{{ fila.etiqueta }}</span><span><strong>{{ fila.porcentaje|porcentaje }}</strong> <span class="text-body-secondary small">({{ fila.en_plazo }}/{{ fila.exigibles }})</span></span></div>
+        {% endfor %}
+      {% endif %}
+      <p class="small text-body-secondary mt-3 mb-0">Cumplimiento = revisiones realizadas en plazo / revisiones con fecha límite en el período (RF-09). Las que aún están dentro de plazo no se consideran.</p>
+    </div>
+  </div>
+  <div class="col-12 col-xl-7">
+    <div class="tarjeta" id="vencidas">
+      <div class="tarjeta-titulo">Revisiones vencidas</div>
+      {% if ind.vencidas %}
+      <div class="table-responsive">
+        <table class="table tabla-sirema">
+          <thead><tr><th>Elemento</th><th>Ubicación</th><th>Responsable</th><th>Fecha límite</th></tr></thead>
+          <tbody>{% for r in ind.vencidas %}
+            <tr><td><a class="text-decoration-none text-reset" href="{% url 'revisiones:detalle' r.pk %}"><span class="mono fw-bold">{{ r.material.codigo_institucional|default:"s/c" }}</span> {{ r.material.nombre }}</a></td>
+              <td>{{ r.material.cajonera }}</td><td>{{ r.usuario_responsable.nombre_corto }}</td><td class="fecha-falla">{{ r.fecha_limite|date:"d-m-Y" }}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      {% else %}<p class="text-body-secondary mb-0"><i class="bi bi-check2-circle" aria-hidden="true"></i> No hay revisiones vencidas en el período.</p>{% endif %}
+    </div>
+    <div class="tarjeta" id="hallazgos">
+      <div class="tarjeta-titulo">Hallazgos abiertos</div>
+      {% if ind.hallazgos_abiertos %}
+      <div class="table-responsive">
+        <table class="table tabla-sirema">
+          <thead><tr><th>Elemento</th><th>Descripción</th><th>Criticidad</th><th></th></tr></thead>
+          <tbody>{% for h in ind.hallazgos_abiertos|slice:":10" %}
+            <tr><td><span class="mono fw-bold">{{ h.revision.material.codigo_institucional|default:"s/c" }}</span> {{ h.revision.material.nombre }}</td>
+              <td>{{ h.descripcion|truncatechars:60 }}</td><td>{{ h.criticidad|badge_criticidad }}</td>
+              <td class="acciones">{% if 'hallazgo.gestionar' in permisos %}<a class="btn btn-outline-negro btn-sm" href="{% url 'revisiones:hallazgo' h.pk %}">Cerrar</a>{% endif %}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      {% if ind.hallazgos_abiertos|length > 10 %}<a href="{% url 'revisiones:hallazgos' %}">Ver los {{ ind.hallazgos_abiertos|length }} hallazgos</a>{% endif %}
+      {% else %}<p class="text-body-secondary mb-0"><i class="bi bi-check2-circle" aria-hidden="true"></i> No hay hallazgos abiertos.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

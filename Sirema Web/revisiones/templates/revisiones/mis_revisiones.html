@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Mis revisiones{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">{{ user.rol }} · {{ user.nombre_completo }}</div><h1>Mis revisiones</h1></div></div>
+<nav class="pestanas" aria-label="Filtrar revisiones">
+  <a href="?ver=pendientes" class="{% if pestana == 'pendientes' %}active{% endif %}" {% if pestana == 'pendientes' %}aria-current="page"{% endif %}>Pendientes <strong>{{ n_pendientes }}</strong></a>
+  <a href="?ver=vencidas" class="{% if pestana == 'vencidas' %}active{% endif %}" {% if pestana == 'vencidas' %}aria-current="page"{% endif %}>Vencidas <strong>{{ n_vencidas }}</strong></a>
+  <a href="?ver=realizadas" class="{% if pestana == 'realizadas' %}active{% endif %}" {% if pestana == 'realizadas' %}aria-current="page"{% endif %}>Realizadas</a>
+</nav>
+{% for r in revisiones %}
+  {% include "revisiones/_tarjeta_revision.html" %}
+{% empty %}
+  <div class="tarjeta vacio">
+    <i class="bi bi-clipboard-check"></i>
+    {% if pestana == 'pendientes' %}No tiene revisiones pendientes. ¡Todo al día!{% elif pestana == 'vencidas' %}No tiene revisiones vencidas.{% else %}Aún no registra revisiones realizadas.{% endif %}
+  </div>
+{% endfor %}
+<p class="text-center text-body-secondary small mt-2"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualizado {% now "H:i" %}</p>
+{% endblock %}

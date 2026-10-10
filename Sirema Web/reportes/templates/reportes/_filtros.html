@@ -1,0 +1,22 @@
+<form method="get" class="d-flex flex-wrap gap-2 align-items-end" aria-label="Filtros del panel">
+  <div><label class="form-label small mb-1" for="f-periodo">Período</label>
+    <select class="form-select" id="f-periodo" name="periodo" data-autoenvio>
+      {% for valor, etiqueta in periodos %}<option value="{{ valor }}" {% if valor == filtros.periodo %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+    </select></div>
+  <div><label class="form-label small mb-1" for="f-unidad">Unidad</label>
+    <select class="form-select" id="f-unidad" name="unidad" data-autoenvio>
+      <option value="">Todas</option>
+      {% for u in unidades %}<option value="{{ u.pk }}" {% if filtros.unidad.pk == u.pk %}selected{% endif %}>{{ u.codigo }} · {{ u.nombre }}</option>{% endfor %}
+    </select></div>
+  <div><label class="form-label small mb-1" for="f-categoria">Categoría</label>
+    <select class="form-select" id="f-categoria" name="categoria" data-autoenvio>
+      <option value="">Todas</option>
+      {% for c in categorias %}<option value="{{ c.pk }}" {% if filtros.categoria.pk == c.pk %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+    </select></div>
+  <noscript><button class="btn btn-negro btn-touch" type="submit">Aplicar</button></noscript>
+  {% if 'reporte.exportar' in permisos %}
+    <a class="btn btn-outline-negro btn-touch" href="{% url 'reportes:exportar' 'pdf' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF</a>
+    <a class="btn btn-sirema btn-touch" href="{% url 'reportes:exportar' 'xlsx' %}?{{ request.GET.urlencode }}"><i class="bi bi-file-earmark-excel" aria-hidden="true"></i> XLSX</a>
+    <a class="btn btn-link btn-touch" href="{% url 'reportes:exportar' 'csv' %}?{{ request.GET.urlencode }}">CSV</a>
+  {% endif %}
+</form>

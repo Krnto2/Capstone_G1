@@ -1,0 +1,101 @@
+{% extends "base.html" %}{% load static sirema %}
+{% block titulo %}Ejecutar revisión{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div id="revision" data-revision="{{ revision.pk }}"
+     data-url-punto="{% url 'revisiones:api_punto' revision.pk 0 %}"
+     data-url-foto="{% url 'revisiones:api_fotografia' revision.pk %}"
+     data-url-finalizar="{% url 'revisiones:finalizar' revision.pk %}">
+  {% csrf_token %}
+
+  <div class="cabecera-revision">
+    <div class="d-flex justify-content-between align-items-center gap-2">
+      <a class="text-white text-decoration-none fw-bold fs-5" href="{% url 'revisiones:mis_revisiones' %}"><i class="bi bi-chevron-left" aria-hidden="true"></i> {{ revision.material.nombre }}</a>
+      <span class="estado-guardado" id="estado-guardado" role="status" aria-live="polite"><i class="bi bi-cloud-check" aria-hidden="true"></i> Guardado</span>
+    </div>
+    <div class="meta mt-1"><span class="mono">{{ revision.material.codigo_institucional|default:"s/c" }}</span> · {{ revision.material.cajonera }} · Plan {{ revision.plan }}</div>
+    <div class="meta">Fecha límite {{ revision.fecha_limite|date:"d-m-Y" }}{% if revision.estado == 'vencida' %} · <strong style="color:#ffb4b4">vencida: quedará fuera de plazo</strong>{% endif %}</div>
+    <div class="d-flex align-items-center gap-2 mt-2">
+      <div class="progreso-revision" aria-hidden="true"><span id="barra-progreso" style="width:{% widthratio resumen.respondidos resumen.total 100 %}%"></span></div>
+      <strong id="texto-progreso">{{ resumen.respondidos }} de {{ resumen.total }}</strong>
+    </div>
+  </div>
+
+  {% if revision.plan.descripcion %}
+    <div class="aviso-inline mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ revision.plan.descripcion }}</div>
+  {% endif %}
+
+  {% for item in puntos %}{% with p=item.punto r=item.resultado %}
+  <section class="punto {% if r %}respondido{% endif %} {% if item.fuera_de_rango %}alerta{% endif %}" id="punto-{{ p.pk }}"
+           data-punto="{{ p.pk }}" data-tipo="{{ p.tipo_dato }}" data-obligatorio="{{ p.obligatorio|yesno:'1,0' }}"
+           data-foto="{{ p.exige_fotografia|yesno:'1,0' }}" data-n-fotos="{{ item.fotos|length }}"
+           data-min="{{ p.valor_minimo|default_if_none:'' }}" data-max="{{ p.valor_maximo|default_if_none:'' }}"
+           data-resultado="{{ r.resultado|default:'' }}" aria-labelledby="titulo-punto-{{ p.pk }}">
+    <div class="ceja">Punto {{ p.numero_orden }} · {{ p.get_tipo_dato_display }}{% if not p.obligatorio %} · opcional{% endif %}{% if p.exige_fotografia %} · <span class="exige">exige foto</span>{% endif %}</div>
+    <h2 class="descripcion" id="titulo-punto-{{ p.pk }}">{{ p.descripcion }}</h2>
+
+    {% if p.tipo_dato == 'numerico' %}
+      <div class="input-group mb-1">
+        <input class="form-control form-control-lg" type="text" inputmode="decimal" autocomplete="off" data-campo="valor"
+               value="{{ r.valor_registrado|numero }}" aria-label="Valor medido{% if p.unidad_medida %} en {{ p.unidad_medida }}{% endif %}" placeholder="Valor medido">
+        {% if p.unidad_medida %}<span class="input-group-text">{{ p.unidad_medida }}</span>{% endif %}
+      </div>
+      {% if p.tiene_rango %}<div class="small text-body-secondary mb-1">Rango aceptable: {{ p.rango_legible }}{% if p.unidad_medida %} {{ p.unidad_medida }}{% endif %}</div>{% endif %}
+      <div class="aviso-rango mb-2" data-aviso-rango {% if not item.fuera_de_rango %}hidden{% endif %}><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Fuera de rango ({{ p.rango_legible }}): se sugiere marcar Falla</div>
+    {% elif p.tipo_dato == 'booleano' %}
+      <div class="btn-group w-100 mb-2" role="group" aria-label="Respuesta">
+        <input type="radio" class="btn-check" name="valor-{{ p.pk }}" id="si-{{ p.pk }}" value="Sí" data-campo="valor" {% if r.valor_registrado == 'Sí' %}checked{% endif %}>
+        <label class="btn btn-outline-negro btn-touch" for="si-{{ p.pk }}">Sí</label>
+        <input type="radio" class="btn-check" name="valor-{{ p.pk }}" id="no-{{ p.pk }}" value="No" data-campo="valor" {% if r.valor_registrado == 'No' %}checked{% endif %}>
+        <label class="btn btn-outline-negro btn-touch" for="no-{{ p.pk }}">No</label>
+      </div>
+    {% elif p.tipo_dato == 'texto' %}
+      <input class="form-control mb-2" type="text" maxlength="100" data-campo="valor" value="{{ r.valor_registrado|default:'' }}" aria-label="Respuesta" placeholder="Respuesta">
+    {% endif %}
+
+    <div class="grupo-resultado" role="group" aria-label="Resultado del punto {{ p.numero_orden }}">
+      <button type="button" class="btn-resultado" data-resultado="conforme" aria-pressed="{% if r.resultado == 'conforme' %}true{% else %}false{% endif %}">Conforme</button>
+      <button type="button" class="btn-resultado" data-resultado="observacion" aria-pressed="{% if r.resultado == 'observacion' %}true{% else %}false{% endif %}">Observ.</button>
+      <button type="button" class="btn-resultado" data-resultado="falla" aria-pressed="{% if r.resultado == 'falla' %}true{% else %}false{% endif %}">Falla</button>
+    </div>
+
+    <div class="mt-2" data-bloque-observacion {% if not r or r.resultado == 'conforme' %}hidden{% endif %}>
+      <label class="form-label small mb-1" for="obs-{{ p.pk }}">Observación (obligatoria)</label>
+      <textarea class="form-control" id="obs-{{ p.pk }}" rows="2" maxlength="300" data-campo="observacion" placeholder="Describa lo observado">{{ r.observacion|default:'' }}</textarea>
+    </div>
+
+    <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+      <div class="miniaturas" data-miniaturas>{% for f in item.fotos %}<a href="{% url 'revisiones:fotografia' f.pk %}" target="_blank" rel="noopener"><img src="{% url 'revisiones:fotografia' f.pk %}" alt="Evidencia del punto {{ p.numero_orden }}" loading="lazy"></a>{% endfor %}</div>
+      <label class="btn {% if p.exige_fotografia %}btn-outline-negro{% else %}btn-link px-0{% endif %} btn-touch mb-0 {% if p.exige_fotografia %}w-100{% endif %}" data-boton-foto>
+        <i class="bi bi-camera" aria-hidden="true"></i> Tomar fotografía{% if p.exige_fotografia %} (obligatoria){% endif %}
+        <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden data-foto-punto="{{ p.pk }}">
+      </label>
+    </div>
+    <div class="small mt-1 text-danger" data-error role="alert"></div>
+  </section>
+  {% endwith %}{% endfor %}
+
+  <section class="punto" id="fotos-generales" data-n-fotos="{{ fotos_generales|length }}" data-foto-general="{{ revision.plan.exige_fotografia|yesno:'1,0' }}">
+    <div class="ceja">Evidencia general{% if revision.plan.exige_fotografia %} · <span class="exige">el plan exige al menos una foto</span>{% endif %}</div>
+    <h2 class="descripcion">Fotografía del equipo</h2>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <div class="miniaturas" data-miniaturas>{% for f in fotos_generales %}<a href="{% url 'revisiones:fotografia' f.pk %}" target="_blank" rel="noopener"><img src="{% url 'revisiones:fotografia' f.pk %}" alt="Evidencia general" loading="lazy"></a>{% endfor %}</div>
+      <label class="btn btn-outline-negro btn-touch mb-0" data-boton-foto>
+        <i class="bi bi-camera" aria-hidden="true"></i> Tomar fotografía
+        <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden data-foto-punto="">
+      </label>
+    </div>
+    <div class="small mt-1 text-danger" data-error role="alert"></div>
+  </section>
+
+  <div class="barra-finalizar">
+    <div class="text-center small text-body-secondary mb-2" id="texto-faltantes" aria-live="polite">{{ faltantes.texto }}</div>
+    <a class="btn btn-sirema btn-lg w-100 {% if faltantes.hay %}disabled{% endif %}" id="boton-finalizar"
+       href="{% url 'revisiones:finalizar' revision.pk %}" {% if faltantes.hay %}aria-disabled="true" tabindex="-1"{% endif %}>Finalizar revisión</a>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/camara.js' %}"></script>
+<script src="{% static 'js/revision.js' %}"></script>
+{% endblock %}

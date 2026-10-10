@@ -1,0 +1,15 @@
+{% if campo.is_hidden %}{{ campo }}{% else %}
+<div class="mb-3 {{ clase }}">
+  {% if campo.widget_type == 'checkbox' %}
+    <div class="form-check">
+      {{ campo }}
+      <label class="form-check-label" for="{{ campo.id_for_label }}">{{ etiqueta|default:campo.label }}</label>
+    </div>
+  {% else %}
+    <label class="form-label" for="{{ campo.id_for_label }}">{{ etiqueta|default:campo.label }}{% if not campo.field.required %} <span class="fw-normal text-body-secondary small">(opcional)</span>{% endif %}</label>
+    {{ campo }}
+  {% endif %}
+  {% if ayuda or campo.help_text %}<div class="form-text">{{ ayuda|default:campo.help_text|safe }}</div>{% endif %}
+  {% if campo.errors %}<ul class="errorlist" id="{{ campo.auto_id }}_error">{% for e in campo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% endif %}

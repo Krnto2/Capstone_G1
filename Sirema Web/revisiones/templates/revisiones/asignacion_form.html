@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Asignar plan{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:asignaciones' %}">Asignaciones</a></div><h1>Asignar plan a material</h1></div></div>
+
+<div class="tarjeta">
+  <div class="tarjeta-titulo">1. Buscar el elemento</div>
+  <form method="get" role="search" class="d-flex gap-2">
+    {% if request.GET.plan %}<input type="hidden" name="plan" value="{{ request.GET.plan }}">{% endif %}
+    <label class="visually-hidden" for="buscar-material">Nombre o código</label>
+    <input class="form-control" type="search" id="buscar-material" name="q" value="{{ q }}" placeholder="Nombre o código (desde 2 caracteres)" autocomplete="off">
+    <button class="btn btn-negro btn-touch" type="submit"><i class="bi bi-search" aria-hidden="true"></i><span class="d-none d-sm-inline"> Buscar</span></button>
+  </form>
+  {% if busqueda_corta %}<p class="small text-body-secondary mt-2 mb-0">Escriba al menos 2 caracteres.</p>{% endif %}
+  {% if q and not busqueda_corta and not resultados %}<p class="small text-body-secondary mt-2 mb-0">No hay elementos activos que coincidan. Los elementos dados de baja no se pueden asignar.</p>{% endif %}
+</div>
+
+<form method="post" novalidate class="tarjeta">{% csrf_token %}
+  {% include "componentes/_errores_formulario.html" %}
+  <div class="tarjeta-titulo">2. Seleccionar el elemento</div>
+  {% if material %}
+    <label class="d-flex gap-2 align-items-start border rounded-3 p-3 mb-2">
+      <input class="form-check-input" type="radio" name="material" value="{{ material.pk }}" checked>
+      <span><span class="fw-semibold">{{ material.nombre }}</span> · <span class="mono">{{ material.codigo_institucional|default:"s/c" }}</span><br><span class="small text-body-secondary">{{ material.cajonera }} · {{ material.categoria }}</span>
+        {% if planes_vigentes %}<br><span class="small">Planes vigentes: {% for a in planes_vigentes %}{{ a.plan }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% endif %}</span>
+    </label>
+  {% endif %}
+  {% for m in resultados %}{% if m.pk != material.pk %}
+    <label class="d-flex gap-2 align-items-start border rounded-3 p-3 mb-2">
+      <input class="form-check-input" type="radio" name="material" value="{{ m.pk }}">
+      <span><span class="fw-semibold">{{ m.nombre }}</span> · <span class="mono">{{ m.codigo_institucional|default:"s/c" }}</span><br><span class="small text-body-secondary">{{ m.cajonera }} · {{ m.categoria }}</span></span>
+    </label>
+  {% endif %}{% endfor %}
+  {% if not material and not resultados %}<p class="text-body-secondary">Use la búsqueda para encontrar el elemento.</p>{% endif %}
+
+  <div class="tarjeta-titulo mt-3">3. Plan, responsable y fecha</div>
+  {% campo form.plan %}
+  {% campo form.responsable %}
+  <div class="row">
+    <div class="col-sm-6">{% campo form.fecha_inicio %}</div>
+    <div class="col-sm-6">{% campo form.fecha_termino %}</div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button class="btn btn-sirema btn-touch" type="submit">Asignar plan</button>
+    <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:asignaciones' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

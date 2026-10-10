@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">Administración</div><h1>Usuarios</h1></div>
+  <a class="btn btn-sirema btn-touch" href="{% url 'accesos:usuario_crear' %}"><i class="bi bi-person-plus" aria-hidden="true"></i> Nuevo usuario</a>
+</div>
+<form class="tarjeta mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-5">{% campo filtro.q clase="mb-0" %}</div>
+    <div class="col-6 col-md-3">{% campo filtro.rol clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.estado clase="mb-0" %}</div>
+    <div class="col-12 col-md-2"><button class="btn btn-negro btn-touch w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button></div>
+  </div>
+</form>
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Nombre</th><th>RUT</th><th class="d-none d-md-table-cell">Correo</th><th>Rol</th><th>Estado</th><th class="d-none d-lg-table-cell">Último acceso</th><th class="pe-3 text-end">Acciones</th></tr></thead>
+      <tbody>
+      {% for u in usuarios %}
+        <tr>
+          <td class="ps-3 fw-semibold">{{ u.nombre_completo }}</td>
+          <td class="mono">{{ u.rut }}</td>
+          <td class="d-none d-md-table-cell">{{ u.correo }}</td>
+          <td>{{ u.rol }}</td>
+          <td>{% if u.activo %}<span class="badge-sirema estado-realizada">Activo</span>{% else %}<span class="badge-sirema estado-no-realizada">Desactivado</span>{% endif %}</td>
+          <td class="d-none d-lg-table-cell">{{ u.last_login|date:"d-m-Y H:i"|default:"—" }}</td>
+          <td class="acciones pe-3">
+            <div class="dropdown">
+              <button class="btn btn-outline-negro btn-sm" style="min-height:40px" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Acciones para {{ u.nombre_completo }}"><i class="bi bi-three-dots"></i></button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item py-2" href="{% url 'accesos:usuario_editar' u.pk %}"><i class="bi bi-pencil"></i> Editar y asignar rol</a></li>
+                <li><a class="dropdown-item py-2" href="{% url 'accesos:usuario_contrasena' u.pk %}"><i class="bi bi-key"></i> Restablecer contraseña</a></li>
+                <li><form method="post" action="{% url 'accesos:usuario_estado' u.pk %}" data-confirmar="{% if u.activo %}¿Desactivar la cuenta de {{ u.nombre_completo }}? Conservará su historial.{% else %}¿Reactivar la cuenta de {{ u.nombre_completo }}?{% endif %}">{% csrf_token %}
+                  <button class="dropdown-item py-2" type="submit">{% if u.activo %}<i class="bi bi-person-x"></i> Desactivar{% else %}<i class="bi bi-person-check"></i> Reactivar{% endif %}</button></form></li>
+              </ul>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="vacio"><i class="bi bi-people"></i>No hay usuarios que coincidan.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Revisión {{ revision.material.nombre }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div>
+    <div class="ceja"><a href="{% url 'inventario:detalle' revision.material.pk %}">{{ revision.material }}</a> · {{ revision.material.cajonera }}</div>
+    <h1>Revisión del {{ revision.fecha_programada|date:"d-m-Y" }}</h1>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if puede_ejecutar %}<a class="btn btn-sirema btn-touch" href="{% url 'revisiones:ejecutar' revision.pk %}"><i class="bi bi-play-fill" aria-hidden="true"></i> {% if revision.fecha_hora_inicio %}Continuar{% else %}Ejecutar{% endif %}</a>{% endif %}
+    {% if revision.ejecutable and 'revision.supervisar' in permisos %}<a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:reasignar' revision.pk %}"><i class="bi bi-person-gear" aria-hidden="true"></i> Reasignar</a>{% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-4">
+    <div class="tarjeta">
+      <dl class="lista-datos mb-0">
+        <dt>Estado</dt><dd>{{ revision.estado|badge_estado }}{% if revision.en_plazo is False %} <span class="badge-sirema resultado-observacion">Fuera de plazo</span>{% endif %}</dd>
+        {% if revision.resultado_global %}<dt>Resultado global</dt><dd>{{ revision.resultado_global|badge_resultado }}</dd>{% endif %}
+        <dt>Plan</dt><dd>{{ revision.plan }} · {{ revision.plan.frecuencia_legible }}</dd>
+        <dt>Responsable</dt><dd>{{ revision.usuario_responsable.nombre_completo }}</dd>
+        <dt>Fechas</dt><dd>Programada {{ revision.fecha_programada|date:"d-m-Y" }} · límite {{ revision.fecha_limite|date:"d-m-Y" }}</dd>
+        {% if revision.usuario_ejecutor %}<dt>Ejecutada por</dt><dd>{{ revision.usuario_ejecutor.nombre_completo }}<br><span class="fw-normal">{{ revision.fecha_hora_inicio|date:"d-m-Y H:i" }} a {{ revision.fecha_hora_termino|date:"H:i" }}</span></dd>{% endif %}
+        {% if revision.observaciones %}<dt>Observaciones</dt><dd class="fw-normal">{{ revision.observaciones }}</dd>{% endif %}
+      </dl>
+    </div>
+    {% for h in hallazgos %}
+      <div class="tarjeta">
+        <div class="d-flex justify-content-between"><div class="tarjeta-titulo mb-1">Hallazgo</div>{{ h.criticidad|badge_criticidad }}</div>
+        <p class="mb-1">{{ h.descripcion }}</p>
+        <p class="small text-body-secondary mb-2">{{ h.estado|badge_hallazgo }} · abierto {{ h.fecha_apertura|date:"d-m-Y H:i" }}</p>
+        <a class="btn btn-outline-negro btn-sm" href="{% url 'revisiones:hallazgo' h.pk %}">Ver seguimiento</a>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="col-12 col-xl-8">
+    <div class="tarjeta tarjeta-lista">
+      <div class="table-responsive">
+        <table class="table tabla-sirema">
+          <thead><tr><th class="ps-3">Punto de control</th><th>Valor</th><th>Resultado</th><th class="pe-3">Evidencia</th></tr></thead>
+          <tbody>
+          {% for item in puntos %}
+            <tr>
+              <td class="ps-3"><div class="fw-semibold">{{ item.punto.numero_orden }}. {{ item.punto.descripcion }}</div>
+                {% if item.punto.tiene_rango %}<div class="small text-body-secondary">Rango {{ item.punto.rango_legible }} {{ item.punto.unidad_medida|default:"" }}</div>{% endif %}
+                {% if item.resultado.observacion %}<div class="small mt-1"><i class="bi bi-chat-left-text" aria-hidden="true"></i> {{ item.resultado.observacion }}</div>{% endif %}</td>
+              <td>{% if item.resultado.valor_registrado %}{{ item.resultado.valor_registrado|numero }} {{ item.punto.unidad_medida|default:"" }}{% else %}—{% endif %}</td>
+              <td>{% if item.resultado %}{{ item.resultado.resultado|badge_resultado }}{% else %}<span class="text-body-secondary">Sin respuesta</span>{% endif %}</td>
+              <td class="pe-3">{% if item.fotos %}{% include "revisiones/_miniaturas.html" with fotos=item.fotos %}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <div class="tarjeta-titulo">Fotografías generales</div>
+      {% include "revisiones/_miniaturas.html" with fotos=fotos_generales %}
+      {% if not fotos_generales %}<p class="text-body-secondary mb-0">Sin fotografías generales.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

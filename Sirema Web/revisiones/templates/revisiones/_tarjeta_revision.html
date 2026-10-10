@@ -1,0 +1,20 @@
+{% load sirema %}<a class="tarjeta-revision {% if r.estado == 'realizada' %}u-realizada{% else %}u-{{ r.urgencia }}{% endif %}"
+   href="{% if r.ejecutable and r.usuario_responsable_id == user.pk %}{% url 'revisiones:ejecutar' r.pk %}{% else %}{% url 'revisiones:detalle' r.pk %}{% endif %}">
+  <div class="d-flex justify-content-between align-items-start gap-2">
+    <span class="titulo">{{ r.material.nombre }}</span>
+    {% if r.estado == 'realizada' %}{{ r.resultado_global|badge_resultado }}
+    {% elif r.urgencia == 'vencida' %}<span class="badge-sirema estado-vencida">Vencida</span>
+    {% elif r.urgencia == 'hoy' %}<span class="badge-sirema urgencia-hoy">Vence hoy</span>
+    {% elif r.estado == 'en_curso' %}<span class="badge-sirema estado-en-curso">En curso</span>
+    {% else %}<span class="badge-sirema estado-pendiente">Pendiente</span>{% endif %}
+  </div>
+  <div class="meta"><span class="mono">{{ r.material.codigo_institucional|default:"s/c" }}</span> · {{ r.material.cajonera }}</div>
+  <div class="d-flex justify-content-between align-items-center mt-1 gap-2">
+    <span class="chip">{{ r.plan.nombre }} · {{ r.plan.frecuencia_legible }}</span>
+    {% if r.estado == 'realizada' %}
+      <span class="small text-body-secondary">{{ r.fecha_hora_termino|date:"d-m-Y H:i" }}{% if r.en_plazo is False %} · fuera de plazo{% endif %}</span>
+    {% elif r.urgencia == 'vencida' %}<span class="fecha-falla">venció {{ r.fecha_limite|date:"d-m-Y" }}</span>
+    {% elif r.urgencia == 'hoy' or r.urgencia == 'pronto' %}<span class="fecha-alerta">{{ r.fecha_limite|date:"d-m-Y" }}</span>
+    {% else %}<span>{{ r.fecha_limite|date:"d-m-Y" }}</span>{% endif %}
+  </div>
+</a>

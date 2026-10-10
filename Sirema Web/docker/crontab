@@ -1,0 +1,7 @@
+# Programador de tareas de SIREMA (contenedor sirema-scheduler). Hora de Chile continental.
+SHELL=/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
+# m  h  dom mon dow usuario comando
+30 5  *   *   *   root . /etc/sirema.env; cd /app && python manage.py generar_revisiones >> /proc/1/fd/1 2>&1
+0  *  *   *   *   root . /etc/sirema.env; cd /app && python manage.py emitir_avisos >> /proc/1/fd/1 2>&1
+0  3  *   *   *   root . /etc/sirema.env; cd /app && python manage.py respaldo_diario >> /proc/1/fd/1 2>&1

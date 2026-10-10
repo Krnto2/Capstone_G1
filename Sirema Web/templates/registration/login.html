@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Iniciar sesión{% endblock %}
+{% block cuerpo %}
+<div class="login">
+  <div class="login-cabecera">
+    <div><span class="logo-compania" aria-hidden="true">8<sup>a</sup></span></div>
+    <div class="marca">SIREMA</div>
+    <div style="color:#d6d9df">Revisiones del material menor</div>
+  </div>
+  <div class="login-lado">
+    <main id="contenido" class="login-cuerpo">
+      <h1 class="h3 fw-bold mb-1">Iniciar sesión</h1>
+      <p class="text-body-secondary mb-4">Ingrese con su correo y contraseña de la compañía.</p>
+      {% include "componentes/_errores_formulario.html" %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {% campo form.username %}
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.password.id_for_label }}">Contraseña</label>
+          <div class="input-group">
+            {{ form.password }}
+            <button class="btn btn-outline-secondary" type="button" data-alternar-clave="#{{ form.password.id_for_label }}" aria-label="Mostrar contraseña" style="min-width:52px"><i class="bi bi-eye" aria-hidden="true"></i></button>
+          </div>
+          {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <button type="submit" class="btn btn-sirema btn-lg w-100 mt-2">Ingresar</button>
+      </form>
+      <p class="text-body-secondary small mt-4 mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> ¿Olvidó su contraseña? Solicite el cambio al administrador de la compañía.</p>
+      <p class="text-body-secondary small mb-0"><i class="bi bi-lock" aria-hidden="true"></i> Tras 5 intentos fallidos la cuenta se bloquea por 15 minutos.</p>
+      {% if usuarios_demo %}
+        <div class="aviso-inline mt-4" aria-label="Usuarios de demostración">
+          <div class="fw-bold mb-1"><i class="bi bi-person-badge" aria-hidden="true"></i> Modo demostración (datos ficticios)</div>
+          <div class="small mb-2">Contraseña para todos: <code class="fw-bold">{{ contrasena_demo }}</code></div>
+          <ul class="list-unstyled small mb-0">
+            {% for u in usuarios_demo %}
+              <li class="d-flex justify-content-between gap-2 py-1 border-top">
+                <button type="button" class="btn btn-link btn-sm p-0 text-start" data-usuario-demo="{{ u.correo }}">{{ u.correo }}</button>
+                <span class="text-body-secondary">{{ u.rol }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          <div class="small text-body-secondary mt-2">Toque un correo para completar el formulario. Solo se muestra con DEBUG activo.</div>
+        </div>
+      {% endif %}
+    </main>
+    <footer class="login-pie">Red local del cuartel · SIREMA v{{ SIREMA_VERSION }}</footer>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if usuarios_demo %}
+<script>
+  document.querySelectorAll("[data-usuario-demo]").forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      document.getElementById("id_username").value = boton.dataset.usuarioDemo;
+      document.getElementById("id_password").value = "{{ contrasena_demo|escapejs }}";
+      document.getElementById("id_password").focus();
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

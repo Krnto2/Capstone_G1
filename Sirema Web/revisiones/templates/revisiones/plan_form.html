@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load static sirema %}
+{% block titulo %}{% if plan %}Modificar plan{% else %}Nuevo plan{% endif %}{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:planes' %}">Planes de revisión</a></div>
+  <h1>{% if plan %}Modificar {{ plan }}{% else %}Definir plan de revisión{% endif %}</h1></div></div>
+{% if versiona %}
+  <div class="alert alert-info"><i class="bi bi-layers" aria-hidden="true"></i> Este plan ya tiene revisiones ejecutadas. Al guardar se creará la <strong>versión {{ plan.version|add:1 }}</strong>: las revisiones históricas conservan la versión actual y las asignaciones vigentes pasan a la nueva.</div>
+{% endif %}
+<form method="post" novalidate id="form-plan">{% csrf_token %}
+  {% include "componentes/_errores_formulario.html" %}
+  <div class="tarjeta">
+    <div class="tarjeta-titulo">Datos del plan</div>
+    <div class="row">
+      <div class="col-md-6">{% campo form.nombre %}</div>
+      <div class="col-6 col-md-2">{% campo form.frecuencia_valor %}</div>
+      <div class="col-6 col-md-2">{% campo form.frecuencia_unidad %}</div>
+      <div class="col-md-2">{% campo form.dias_tolerancia "Tolerancia (días)" %}</div>
+      <div class="col-12">{% campo form.descripcion %}</div>
+      <div class="col-12">{% campo form.exige_fotografia %}</div>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="tarjeta-titulo mb-0">Puntos de control</div>
+      <button class="btn btn-outline-negro btn-touch" type="button" data-agregar-punto><i class="bi bi-plus-lg" aria-hidden="true"></i> Agregar punto</button>
+    </div>
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors|join:" " }}</div>{% endif %}
+    <div id="lista-puntos">
+      {% for f in formset %}{% include "revisiones/_fila_punto.html" %}{% endfor %}
+    </div>
+    <template id="plantilla-punto">{% with f=formset.empty_form %}{% include "revisiones/_fila_punto.html" %}{% endwith %}</template>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap mt-3">
+    <button class="btn btn-sirema btn-touch" type="submit">Guardar plan</button>
+    <a class="btn btn-outline-negro btn-touch" href="{% if plan %}{% url 'revisiones:plan' plan.pk %}{% else %}{% url 'revisiones:planes' %}{% endif %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/plan.js' %}"></script>{% endblock %}

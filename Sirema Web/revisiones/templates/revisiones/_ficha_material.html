@@ -1,0 +1,25 @@
+{% load sirema %}<div class="tarjeta">
+  <div class="tarjeta-titulo">Planes y revisiones</div>
+  {% for a in seccion.asignaciones %}
+    <div class="d-flex justify-content-between gap-2 border-bottom pb-2 mb-2">
+      <div><div class="fw-semibold">{{ a.plan }}</div><div class="small text-body-secondary">{{ a.plan.frecuencia_legible|capfirst }} · responsable {{ a.usuario_responsable.nombre_corto|default:"—" }}</div></div>
+      <span class="badge-sirema estado-realizada align-self-start">Vigente</span>
+    </div>
+  {% empty %}
+    <p class="text-body-secondary">Sin plan de revisión asignado.</p>
+  {% endfor %}
+  {% if seccion.abiertas %}
+    <div class="fw-semibold mt-3 mb-1">Revisiones abiertas</div>
+    {% for r in seccion.abiertas %}
+      <div class="d-flex justify-content-between align-items-center py-1">
+        <a href="{% url 'revisiones:detalle' r.pk %}">{{ r.plan.nombre }} · límite {{ r.fecha_limite|date:"d-m-Y" }}</a>{{ r.estado|badge_estado }}
+      </div>
+    {% endfor %}
+  {% endif %}
+  {% if seccion.hallazgos %}
+    <div class="fw-semibold mt-3 mb-1">Hallazgos abiertos</div>
+    {% for h in seccion.hallazgos %}
+      <div class="d-flex justify-content-between align-items-center py-1 gap-2"><a href="{% url 'revisiones:hallazgo' h.pk %}">{{ h.descripcion|truncatechars:60 }}</a>{{ h.criticidad|badge_criticidad }}</div>
+    {% endfor %}
+  {% endif %}
+</div>

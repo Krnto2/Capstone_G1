@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Permisos por rol{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">Administración</div><h1>Permisos por rol</h1></div></div>
+<p class="text-body-secondary">Los permisos se validan en el servidor en cada solicitud. El rol Administrador conserva siempre la administración de usuarios y permisos, para no perder el acceso.</p>
+<form method="post">{% csrf_token %}
+  {% for modulo, filas in modulos.items %}
+  <div class="tarjeta tarjeta-lista mb-3">
+    <div class="table-responsive">
+      <table class="table tabla-sirema matriz-permisos">
+        <thead><tr><th class="ps-3 text-uppercase">Módulo {{ modulo }}</th>{% for rol in roles %}<th>{{ rol }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for fila in filas %}
+          <tr>
+            <td class="ps-3"><div class="fw-semibold">{{ fila.permiso.nombre }}</div><div class="small text-body-secondary mono">{{ fila.permiso.codigo }}</div></td>
+            {% for celda in fila.celdas %}
+              <td>
+                <input class="form-check-input" type="checkbox" name="rol_{{ celda.rol.pk }}" value="{{ fila.permiso.pk }}"
+                       aria-label="{{ celda.rol }}: {{ fila.permiso.nombre }}" {% if celda.marcado %}checked{% endif %} {% if celda.protegido %}checked disabled{% endif %}>
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+  <button class="btn btn-sirema btn-touch" type="submit" data-confirmar="¿Guardar los cambios de permisos? Quedarán registrados en la bitácora.">Guardar permisos</button>
+</form>
+{% endblock %}

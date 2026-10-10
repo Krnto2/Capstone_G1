@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Registrar movimiento{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'inventario:detalle' material.pk %}">{{ material }}</a></div><h1>Registrar movimiento</h1></div></div>
+<div class="tarjeta">
+  <p class="mb-3"><span class="text-body-secondary">Ubicación actual:</span> <strong>{{ material.cajonera }}</strong></p>
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% campo form.cajonera_destino %}
+    {% campo form.motivo %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Registrar traslado</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'inventario:detalle' material.pk %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

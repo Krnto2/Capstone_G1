@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}{{ plan }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja"><a href="{% url 'revisiones:planes' %}">Planes de revisión</a> · versión {{ plan.version }}</div><h1>{{ plan.nombre }}</h1></div>
+  {% if plan.activo %}
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-sirema btn-touch" href="{% url 'revisiones:asignacion_crear' %}?plan={{ plan.pk }}"><i class="bi bi-link-45deg" aria-hidden="true"></i> Asignar a material</a>
+    <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:plan_editar' plan.pk %}"><i class="bi bi-pencil" aria-hidden="true"></i> Modificar</a>
+    <form method="post" action="{% url 'revisiones:plan_desactivar' plan.pk %}" data-confirmar="¿Desactivar el plan? Se cerrarán sus {{ asignaciones|length }} asignaciones vigentes.">{% csrf_token %}
+      <button class="btn btn-outline-danger btn-touch" type="submit">Desactivar</button></form>
+  </div>
+  {% else %}<span class="badge-sirema estado-no-realizada">Inactivo</span>{% endif %}
+</div>
+<div class="row g-3">
+  <div class="col-12 col-xl-7">
+    <div class="tarjeta">
+      <p class="mb-2"><strong>{{ plan.frecuencia_legible|capfirst }}</strong> · tolerancia de {{ plan.dias_tolerancia }} día{{ plan.dias_tolerancia|pluralize }} · {% if plan.exige_fotografia %}exige fotografía general{% else %}fotografía general opcional{% endif %}</p>
+      {% if plan.descripcion %}<p class="aviso-inline">{{ plan.descripcion }}</p>{% endif %}
+      <ol class="list-group list-group-numbered list-group-flush">
+        {% for p in plan.puntos.all %}
+          <li class="list-group-item px-0 d-flex justify-content-between gap-2">
+            <div class="ms-2 me-auto">
+              <div class="fw-semibold">{{ p.descripcion }}</div>
+              <div class="small text-body-secondary">{{ p.get_tipo_dato_display }}{% if p.tiene_rango %} · rango {{ p.rango_legible }} {{ p.unidad_medida|default:"" }}{% endif %}</div>
+            </div>
+            <div class="d-flex gap-1 flex-wrap justify-content-end">
+              {% if p.obligatorio %}<span class="chip">obligatorio</span>{% endif %}
+              {% if p.exige_fotografia %}<span class="chip"><i class="bi bi-camera"></i> foto</span>{% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% if versiones %}
+      <div class="tarjeta"><div class="tarjeta-titulo">Otras versiones</div>
+        {% for v in versiones %}<a class="me-3" href="{% url 'revisiones:plan' v.pk %}">v{{ v.version }}{% if not v.activo %} (inactiva){% endif %}</a>{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="tarjeta">
+      <div class="tarjeta-titulo">Elementos asignados ({{ asignaciones|length }})</div>
+      {% for a in asignaciones %}
+        <div class="d-flex justify-content-between border-bottom py-2 gap-2">
+          <div><a class="fw-semibold" href="{% url 'inventario:detalle' a.material.pk %}">{{ a.material }}</a>
+            <div class="small text-body-secondary">{{ a.material.cajonera }} · {{ a.usuario_responsable.nombre_corto|default:"sin responsable" }} · desde {{ a.fecha_inicio|date:"d-m-Y" }}</div></div>
+        </div>
+      {% empty %}
+        <p class="text-body-secondary mb-0">Ningún elemento tiene este plan.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

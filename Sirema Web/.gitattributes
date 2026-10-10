@@ -1,0 +1,7 @@
+* text=auto
+*.sh text eol=lf
+docker/crontab text eol=lf
+docker/nginx.conf text eol=lf
+*.png binary
+*.woff binary
+*.woff2 binary

@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div>
+  <div class="ceja"><a href="{% url 'inventario:lista' %}">Inventario</a>{% if material %} · <a href="{% url 'inventario:detalle' material.pk %}">{{ material }}</a>{% endif %}</div>
+  <h1>{{ titulo }}</h1></div></div>
+<div class="tarjeta">
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    <div class="row">
+      <div class="col-md-6">{% campo form.tipo %}</div>
+      <div class="col-md-6">{% campo form.codigo_institucional %}</div>
+      <div class="col-12">{% campo form.nombre %}</div>
+      <div class="col-md-6">{% campo form.categoria %}</div>
+      {% if form.cajonera %}<div class="col-md-6">{% campo form.cajonera %}</div>
+      {% else %}<div class="col-md-6"><div class="mb-3"><span class="form-label d-block">Ubicación</span>{{ material.cajonera }}<div class="form-text">Para cambiarla, registre un <a href="{% url 'inventario:trasladar' material.pk %}">movimiento</a>.</div></div></div>{% endif %}
+      <div class="col-md-4" data-solo-granel>{% campo form.cantidad %}</div>
+      <div class="col-md-4">{% campo form.marca %}</div>
+      <div class="col-md-4">{% campo form.modelo %}</div>
+      <div class="col-md-6">{% campo form.numero_serie %}</div>
+      <div class="col-12">{% campo form.observaciones %}</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar</button>
+      {% if not material %}<button class="btn btn-outline-negro btn-touch" type="submit" name="otro" value="1">Guardar y registrar otro</button>{% endif %}
+      <a class="btn btn-link btn-touch" href="{% if material %}{% url 'inventario:detalle' material.pk %}{% else %}{% url 'inventario:lista' %}{% endif %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function () {
+    var tipo = document.getElementById("id_tipo"), bloque = document.querySelector("[data-solo-granel]");
+    if (!tipo || !bloque) return;
+    function actualizar() { bloque.hidden = tipo.value !== "granel"; }
+    tipo.addEventListener("change", actualizar); actualizar();
+  })();
+</script>
+{% endblock %}
