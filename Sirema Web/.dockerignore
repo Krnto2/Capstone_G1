@@ -1,0 +1,14 @@
+.venv
+.git
+.github
+__pycache__
+*.pyc
+.env
+db.sqlite3
+media
+staticfiles
+respaldos
+docker/certs
+.coverage
+htmlcov
+.pytest_cache

@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}{% if object %}Editar usuario{% else %}Nuevo usuario{% endif %}{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'accesos:usuarios' %}">Usuarios</a></div>
+  <h1>{% if object %}{{ object.nombre_completo }}{% else %}Nuevo usuario{% endif %}</h1></div></div>
+<div class="tarjeta">
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    <div class="row">
+      <div class="col-md-6">{% campo form.rut %}</div>
+      <div class="col-md-6">{% campo form.rol "Rol" "Bombero ejecuta revisiones; Jefatura además gestiona material, planes, hallazgos y reportes; Administrador gestiona usuarios, catálogos y bitácora." %}</div>
+      <div class="col-md-6">{% campo form.nombre %}</div>
+      <div class="col-md-6">{% campo form.apellidos %}</div>
+      <div class="col-md-6">{% campo form.correo "Correo (credencial de acceso)" %}</div>
+      <div class="col-md-6">{% campo form.telefono %}</div>
+      {% if form.contrasena1 %}
+        <div class="col-md-6">{% campo form.contrasena1 %}</div>
+        <div class="col-md-6">{% campo form.contrasena2 %}</div>
+      {% endif %}
+    </div>
+    <p class="small text-body-secondary"><i class="bi bi-shield-check" aria-hidden="true"></i> Los datos personales se usan solo para operar el sistema (Ley 19.628 y Ley 21.719).</p>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'accesos:usuarios' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Hallazgos{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">Seguimiento de fallas</div><h1>Hallazgos</h1></div></div>
+<form class="tarjeta mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-4">{% campo filtro.estado clase="mb-0" %}</div>
+    <div class="col-6 col-md-4">{% campo filtro.criticidad clase="mb-0" %}</div>
+    <div class="col-12 col-md-4"><button class="btn btn-negro btn-touch w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button></div>
+  </div>
+</form>
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Elemento</th><th>Descripción</th><th>Criticidad</th><th>Estado</th><th>Apertura</th><th class="pe-3"></th></tr></thead>
+      <tbody>
+      {% for h in hallazgos %}
+        <tr>
+          <td class="ps-3"><span class="mono fw-semibold">{{ h.revision.material.codigo_institucional|default:"s/c" }}</span> {{ h.revision.material.nombre }}<div class="small text-body-secondary">{{ h.revision.material.cajonera }}</div></td>
+          <td>{{ h.descripcion|truncatechars:90 }}</td>
+          <td>{{ h.criticidad|badge_criticidad }}</td>
+          <td>{{ h.estado|badge_hallazgo }}</td>
+          <td class="text-nowrap">{{ h.fecha_apertura|date:"d-m-Y" }}</td>
+          <td class="pe-3 acciones"><a class="btn btn-outline-negro btn-sm" href="{% url 'revisiones:hallazgo' h.pk %}">{% if h.abierto %}Gestionar{% else %}Ver{% endif %}</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6"><div class="vacio"><i class="bi bi-check2-circle"></i>No hay hallazgos con esos filtros.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

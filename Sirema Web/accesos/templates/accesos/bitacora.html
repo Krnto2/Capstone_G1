@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Bitácora de auditoría{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">Administración</div><h1>Bitácora de auditoría</h1></div>
+  <span class="text-body-secondary small"><i class="bi bi-lock" aria-hidden="true"></i> Registro inalterable (RNF-09)</span></div>
+<form class="tarjeta mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-3">{% campo filtro.usuario clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.accion clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.entidad clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.desde clase="mb-0" %}</div>
+    <div class="col-6 col-md-2">{% campo filtro.hasta clase="mb-0" %}</div>
+    <div class="col-12 col-md-1"><button class="btn btn-negro btn-touch w-100" type="submit" aria-label="Filtrar"><i class="bi bi-search"></i></button></div>
+  </div>
+</form>
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema small">
+      <thead><tr><th class="ps-3">Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Registro</th><th>Cambios</th><th class="pe-3">IP</th></tr></thead>
+      <tbody>
+      {% for e in eventos %}
+        <tr>
+          <td class="ps-3 text-nowrap">{{ e.fecha_hora|date:"d-m-Y H:i:s" }}</td>
+          <td class="text-nowrap">{{ e.usuario.nombre_corto }}</td>
+          <td>{{ e.get_accion_display }}</td>
+          <td class="mono">{{ e.entidad_afectada }}</td>
+          <td class="mono">{{ e.id_registro|truncatechars:14 }}</td>
+          <td style="min-width:260px">
+            {% if e.datos_anteriores %}<div class="text-body-secondary"><span class="fw-semibold">Antes:</span> <span class="mono">{{ e.datos_anteriores|truncatechars:160 }}</span></div>{% endif %}
+            {% if e.datos_nuevos %}<div><span class="fw-semibold">Después:</span> <span class="mono">{{ e.datos_nuevos|truncatechars:160 }}</span></div>{% endif %}
+          </td>
+          <td class="pe-3 mono">{{ e.direccion_ip|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="vacio"><i class="bi bi-journal"></i>No hay eventos con esos filtros.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

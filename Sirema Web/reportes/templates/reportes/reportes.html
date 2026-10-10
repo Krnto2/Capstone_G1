@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Reportes{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">{{ filtros.etiqueta }}</div><h1>Reporte de cumplimiento</h1></div>
+  {% include "reportes/_filtros.html" %}
+</div>
+<div class="tarjeta mb-3">
+  <div class="d-flex flex-wrap gap-4">
+    <div><div class="text-body-secondary small">Cumplimiento</div><div class="fs-3 fw-bold">{{ ind.porcentaje|porcentaje }}</div></div>
+    <div><div class="text-body-secondary small">En plazo / exigibles</div><div class="fs-3 fw-bold">{{ ind.en_plazo }} / {{ ind.exigibles }}</div></div>
+    <div><div class="text-body-secondary small">Fuera de plazo</div><div class="fs-3 fw-bold">{{ ind.fuera_de_plazo }}</div></div>
+    <div><div class="text-body-secondary small">Vencidas</div><div class="fs-3 fw-bold text-danger">{{ ind.vencidas|length }}</div></div>
+    <div><div class="text-body-secondary small">Revisiones del período</div><div class="fs-3 fw-bold">{{ ind.total_periodo }}</div></div>
+  </div>
+</div>
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Elemento</th><th>Ubicación</th><th>Plan</th><th>Responsable</th><th>Límite</th><th>Estado</th><th>Resultado</th><th class="pe-3">Ejecución</th></tr></thead>
+      <tbody>
+      {% for r in revisiones %}
+        <tr>
+          <td class="ps-3"><a class="text-decoration-none text-reset" href="{% url 'revisiones:detalle' r.pk %}"><span class="mono fw-semibold">{{ r.material.codigo_institucional|default:"s/c" }}</span> {{ r.material.nombre }}</a></td>
+          <td>{{ r.material.cajonera }}</td><td>{{ r.plan }}</td><td>{{ r.usuario_responsable.nombre_corto }}</td>
+          <td>{{ r.fecha_limite|date:"d-m-Y" }}</td><td>{{ r.estado|badge_estado }}</td>
+          <td>{% if r.resultado_global %}{{ r.resultado_global|badge_resultado }}{% else %}—{% endif %}</td>
+          <td class="pe-3">{% if r.fecha_hora_termino %}{{ r.fecha_hora_termino|date:"d-m-Y H:i" }}{% if r.en_plazo is False %}<div class="small fecha-alerta">fuera de plazo</div>{% endif %}{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="vacio"><i class="bi bi-calendar2"></i>No hay revisiones con fecha límite en el período.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

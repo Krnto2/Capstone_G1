@@ -1,0 +1,44 @@
+# Integración continua de SIREMA (carpeta «Sirema Web»): pruebas sobre PostgreSQL 16
+# y cobertura mínima de 70 % (RNF-07).
+name: SIREMA · pruebas
+
+on:
+  push:
+    paths: ["Sirema Web/**", ".github/workflows/sirema-pruebas.yml"]
+  pull_request:
+    paths: ["Sirema Web/**", ".github/workflows/sirema-pruebas.yml"]
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Sirema Web
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sirema
+          POSTGRES_USER: sirema
+          POSTGRES_PASSWORD: sirema
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sirema" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      POSTGRES_DB: sirema
+      POSTGRES_USER: sirema
+      POSTGRES_PASSWORD: sirema
+      POSTGRES_HOST: localhost
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: Sirema Web/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: >-
+          pytest --cov=accesos --cov=inventario --cov=revisiones --cov=reportes --cov=nucleo
+          --cov-report=term-missing --cov-fail-under=70

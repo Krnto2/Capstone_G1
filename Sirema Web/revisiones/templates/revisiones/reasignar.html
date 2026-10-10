@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Reasignar revisión{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:detalle' revision.pk %}">{{ revision }}</a></div><h1>Reasignar responsable</h1></div></div>
+<div class="tarjeta">
+  <p>Responsable actual: <strong>{{ revision.usuario_responsable.nombre_completo }}</strong> · fecha límite {{ revision.fecha_limite|date:"d-m-Y" }}</p>
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% campo form.responsable %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Reasignar y notificar</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:detalle' revision.pk %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

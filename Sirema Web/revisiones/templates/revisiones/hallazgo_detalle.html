@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Hallazgo{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div>
+  <div class="ceja">{% if 'hallazgo.gestionar' in permisos %}<a href="{% url 'revisiones:hallazgos' %}">Hallazgos</a> · {% endif %}<a href="{% url 'inventario:detalle' hallazgo.revision.material.pk %}">{{ hallazgo.revision.material }}</a></div>
+  <h1>Hallazgo {{ hallazgo.criticidad|badge_criticidad }}</h1></div></div>
+<div class="tarjeta">
+  <p class="fs-5">{{ hallazgo.descripcion }}</p>
+  <dl class="row lista-datos mb-0">
+    <dt class="col-sm-4">Estado</dt><dd class="col-sm-8">{{ hallazgo.estado|badge_hallazgo }}</dd>
+    <dt class="col-sm-4">Elemento</dt><dd class="col-sm-8">{{ hallazgo.revision.material.nombre }} · {{ hallazgo.revision.material.cajonera }}</dd>
+    <dt class="col-sm-4">Revisión</dt><dd class="col-sm-8"><a href="{% url 'revisiones:detalle' hallazgo.revision.pk %}">{{ hallazgo.revision.plan }} · {{ hallazgo.revision.fecha_programada|date:"d-m-Y" }}</a></dd>
+    <dt class="col-sm-4">Detectado por</dt><dd class="col-sm-8">{{ hallazgo.revision.usuario_ejecutor.nombre_completo|default:"—" }} · {{ hallazgo.fecha_apertura|date:"d-m-Y H:i" }}</dd>
+    {% if hallazgo.fecha_cierre %}
+      <dt class="col-sm-4">Cerrado por</dt><dd class="col-sm-8">{{ hallazgo.usuario_cierre.nombre_completo|default:"—" }} · {{ hallazgo.fecha_cierre|date:"d-m-Y H:i" }}</dd>
+      <dt class="col-sm-4">Acción tomada</dt><dd class="col-sm-8 fw-normal">{{ hallazgo.acciones }}</dd>
+    {% endif %}
+  </dl>
+</div>
+{% if hallazgo.abierto and 'hallazgo.gestionar' in permisos %}
+<div class="tarjeta">
+  <div class="tarjeta-titulo">Seguimiento</div>
+  {% if hallazgo.estado == 'abierto' %}
+    <form method="post" class="mb-3">{% csrf_token %}<input type="hidden" name="accion" value="reparacion">
+      <button class="btn btn-outline-negro btn-touch" type="submit"><i class="bi bi-tools" aria-hidden="true"></i> Marcar en reparación</button></form>
+  {% endif %}
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="accion" value="cerrar">
+    {% campo form.acciones %}
+    <button class="btn btn-sirema btn-touch" type="submit"><i class="bi bi-check2-square" aria-hidden="true"></i> Cerrar hallazgo</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

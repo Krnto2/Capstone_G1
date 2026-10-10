@@ -1,0 +1,98 @@
+{% load static sirema %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111214">
+  <title>{% block titulo %}SIREMA{% endblock %} · SIREMA</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sirema.css' %}">
+  {% block estilos %}{% endblock %}
+</head>
+<body>
+<a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
+{% block cuerpo %}
+<div class="app">
+  <aside class="sidebar d-none d-lg-flex" aria-label="Menú principal">
+    <div class="px-4 pt-4 pb-3">
+      <a class="marca" href="{% url 'inicio' %}">SIREMA</a>
+      <div class="sub mt-1">{{ SIREMA_COMPANIA }} · {{ user.rol }}</div>
+    </div>
+    {% include "componentes/_navegacion.html" %}
+    <div class="sidebar-pie">
+      <div class="mb-2"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ user.nombre_completo }} · {{ user.rol }}</div>
+      <a href="{% url 'accesos:perfil' %}"><i class="bi bi-person-gear" aria-hidden="true"></i> Mi perfil</a>
+      <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
+        <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="flex-grow-1 d-flex flex-column min-vw-0" style="min-width:0">
+    <header class="topbar-movil d-lg-none">
+      <a class="marca" href="{% url 'inicio' %}">SIREMA</a>
+      <div class="d-flex align-items-center gap-1">
+        <a class="btn-icono-oscuro" href="{% url 'revisiones:notificaciones' %}" aria-label="Notificaciones: {{ notificaciones_no_leidas|default:0 }} sin leer">
+          <i class="bi bi-bell" aria-hidden="true"></i>
+          {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}
+        </a>
+        <a class="avatar text-decoration-none" href="{% url 'accesos:perfil' %}" aria-label="Mi perfil">{{ user.iniciales }}</a>
+      </div>
+    </header>
+
+    <main id="contenido" class="contenido {% block clase_contenido %}{% endblock %}">
+      {% if messages %}
+        <div class="mb-3" aria-live="polite">
+          {% for m in messages %}
+            <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible fade show" role="alert">
+              {{ m }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block contenido %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<nav class="nav-inferior d-lg-none" aria-label="Navegación inferior">
+  {% if 'revision.ejecutar' in permisos %}
+    <a href="{% url 'revisiones:mis_revisiones' %}" class="{% nav_activo 'revisiones:mis_revisiones,revisiones:ejecutar,revisiones:finalizar' %}"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Revisiones</a>
+  {% elif 'panel.consultar' in permisos %}
+    <a href="{% url 'reportes:panel' %}" class="{% nav_activo 'reportes:panel' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Panel</a>
+  {% endif %}
+  {% if 'material.consultar' in permisos %}
+    <a href="{% url 'inventario:lista' %}" class="{% nav_activo 'inventario:lista,inventario:detalle' %}"><i class="bi bi-box-seam" aria-hidden="true"></i>Inventario</a>
+  {% endif %}
+  <a href="{% url 'revisiones:notificaciones' %}" class="{% nav_activo 'revisiones:notificaciones' %}"><i class="bi bi-bell" aria-hidden="true"></i>Avisos
+    {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}</a>
+  <button type="button" data-bs-toggle="offcanvas" data-bs-target="#menu-movil" aria-controls="menu-movil"><i class="bi bi-list" aria-hidden="true"></i>Menú</button>
+</nav>
+
+<div class="offcanvas offcanvas-end offcanvas-sirema" tabindex="-1" id="menu-movil" aria-labelledby="menu-movil-titulo">
+  <div class="offcanvas-header">
+    <div>
+      <div class="marca" id="menu-movil-titulo">SIREMA</div>
+      <div class="sub small" style="color:#b9bdc7">{{ user.nombre_completo }} · {{ user.rol }}</div>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar menú"></button>
+  </div>
+  <div class="offcanvas-body p-0 d-flex flex-column">
+    {% include "componentes/_navegacion.html" %}
+    <div class="sidebar-pie">
+      <a href="{% url 'accesos:perfil' %}"><i class="bi bi-person-gear" aria-hidden="true"></i> Mi perfil</a>
+      <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
+        <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+<script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/sirema.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

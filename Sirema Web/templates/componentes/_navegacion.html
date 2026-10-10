@@ -1,0 +1,46 @@
+{% load sirema %}<nav class="nav-sirema nav flex-column">
+  {% if 'panel.consultar' in permisos %}
+    <a class="nav-link {% nav_activo 'reportes:panel' %}" href="{% url 'reportes:panel' %}"><i class="bi bi-speedometer2" aria-hidden="true"></i>Panel de cumplimiento</a>
+  {% endif %}
+  {% if 'revision.ejecutar' in permisos %}
+    <a class="nav-link {% nav_activo 'revisiones:mis_revisiones,revisiones:ejecutar,revisiones:finalizar' %}" href="{% url 'revisiones:mis_revisiones' %}"><i class="bi bi-clipboard-check" aria-hidden="true"></i>Mis revisiones</a>
+  {% endif %}
+  {% if 'revision.supervisar' in permisos %}
+    <a class="nav-link {% nav_activo 'revisiones:lista,revisiones:detalle,revisiones:reasignar' %}" href="{% url 'revisiones:lista' %}"><i class="bi bi-calendar2-check" aria-hidden="true"></i>Revisiones</a>
+  {% endif %}
+  {% if 'plan.administrar' in permisos %}
+    <a class="nav-link {% nav_activo 'revisiones:planes,revisiones:plan,revisiones:plan_crear,revisiones:plan_editar' %}" href="{% url 'revisiones:planes' %}"><i class="bi bi-list-check" aria-hidden="true"></i>Planes de revisión</a>
+  {% endif %}
+  {% if 'asignacion.administrar' in permisos %}
+    <a class="nav-link {% nav_activo 'revisiones:asignaciones,revisiones:asignacion_crear' %}" href="{% url 'revisiones:asignaciones' %}"><i class="bi bi-link-45deg" aria-hidden="true"></i>Asignaciones</a>
+  {% endif %}
+  {% if 'material.consultar' in permisos %}
+    <a class="nav-link {% nav_activo 'inventario:lista,inventario:detalle,inventario:crear,inventario:editar,inventario:baja,inventario:trasladar,inventario:importar' %}" href="{% url 'inventario:lista' %}"><i class="bi bi-box-seam" aria-hidden="true"></i>Inventario</a>
+  {% endif %}
+  {% if 'hallazgo.gestionar' in permisos %}
+    <a class="nav-link {% nav_activo 'revisiones:hallazgos,revisiones:hallazgo' %}" href="{% url 'revisiones:hallazgos' %}"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i>Hallazgos
+      {% if hallazgos_abiertos %}<span class="contador contador-alerta">{{ hallazgos_abiertos }}</span>{% endif %}</a>
+  {% endif %}
+  {% if 'reporte.exportar' in permisos %}
+    <a class="nav-link {% nav_activo 'reportes:reportes' %}" href="{% url 'reportes:reportes' %}"><i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>Reportes</a>
+  {% endif %}
+  <a class="nav-link {% nav_activo 'revisiones:notificaciones' %}" href="{% url 'revisiones:notificaciones' %}"><i class="bi bi-bell" aria-hidden="true"></i>Notificaciones
+    {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}</a>
+
+  {% if 'usuario.administrar' in permisos or 'catalogo.administrar' in permisos or 'auditoria.consultar' in permisos %}
+    <div class="titulo-seccion">Administración</div>
+    {% if 'usuario.administrar' in permisos %}
+      <a class="nav-link {% nav_activo 'accesos:usuarios,accesos:usuario_crear,accesos:usuario_editar,accesos:usuario_contrasena' %}" href="{% url 'accesos:usuarios' %}"><i class="bi bi-people" aria-hidden="true"></i>Usuarios</a>
+    {% endif %}
+    {% if 'permiso.administrar' in permisos %}
+      <a class="nav-link {% nav_activo 'accesos:permisos' %}" href="{% url 'accesos:permisos' %}"><i class="bi bi-shield-lock" aria-hidden="true"></i>Permisos por rol</a>
+    {% endif %}
+    {% if 'catalogo.administrar' in permisos %}
+      <a class="nav-link {% nav_activo 'inventario:unidades,inventario:unidad_crear,inventario:unidad_editar,inventario:cajonera_crear,inventario:cajonera_editar' %}" href="{% url 'inventario:unidades' %}"><i class="bi bi-truck" aria-hidden="true"></i>Unidades y cajoneras</a>
+      <a class="nav-link {% nav_activo 'inventario:categorias,inventario:categoria_crear,inventario:categoria_editar' %}" href="{% url 'inventario:categorias' %}"><i class="bi bi-tags" aria-hidden="true"></i>Categorías</a>
+    {% endif %}
+    {% if 'auditoria.consultar' in permisos %}
+      <a class="nav-link {% nav_activo 'accesos:bitacora' %}" href="{% url 'accesos:bitacora' %}"><i class="bi bi-journal-text" aria-hidden="true"></i>Bitácora</a>
+    {% endif %}
+  {% endif %}
+</nav>

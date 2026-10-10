@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Categorías{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">Administración</div><h1>Categorías</h1></div>
+  <a class="btn btn-sirema btn-touch" href="{% url 'inventario:categoria_crear' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva categoría</a>
+</div>
+<div class="tarjeta tarjeta-lista">
+  <table class="table tabla-sirema">
+    <thead><tr><th class="ps-3">Nombre</th><th>Descripción</th><th>Elementos</th><th class="pe-3"></th></tr></thead>
+    <tbody>
+    {% for c in categorias %}
+      <tr>
+        <td class="ps-3 fw-semibold">{{ c.nombre }}</td>
+        <td>{{ c.descripcion|default:"" }}</td>
+        <td>{{ c.n_elementos }}</td>
+        <td class="pe-3 acciones">
+          <a class="btn btn-link btn-sm" href="{% url 'inventario:categoria_editar' c.pk %}">Editar</a>
+          {% if not c.n_elementos %}
+          <form class="d-inline" method="post" action="{% url 'inventario:eliminar' 'categoria' c.pk %}" data-confirmar="¿Eliminar la categoría {{ c.nombre }}?">{% csrf_token %}<button class="btn btn-link btn-sm text-danger">Eliminar</button></form>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4"><div class="vacio">No hay categorías.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small text-body-secondary mt-2">Una categoría con elementos no se puede eliminar (RF-05).</p>
+{% endblock %}

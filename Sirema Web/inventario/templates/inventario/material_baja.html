@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Dar de baja{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'inventario:detalle' material.pk %}">{{ material }}</a></div><h1>Dar de baja material</h1></div></div>
+<div class="tarjeta">
+  {% if not material.activo %}
+    <p>Este elemento ya está dado de baja.</p>
+  {% else %}
+  <p><strong>{{ material.nombre }}</strong> · <span class="mono">{{ material.codigo_institucional|default:"s/c" }}</span> · {{ material.cajonera }}</p>
+  <div class="alert alert-warning">La baja es lógica: el elemento conserva su historial, sus planes vigentes se cierran y sus revisiones pendientes quedan como no realizadas. El código no se puede reutilizar.</div>
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% campo form.motivo %}
+    {% campo form.destino_final %}
+    {% campo form.confirmar %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-danger btn-touch" type="submit">Confirmar baja</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'inventario:detalle' material.pk %}">Cancelar</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

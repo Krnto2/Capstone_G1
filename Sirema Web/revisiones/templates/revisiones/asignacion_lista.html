@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}Asignaciones{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">Jefatura · {{ sin_plan }} elemento{{ sin_plan|pluralize }} activo{{ sin_plan|pluralize }} sin plan</div><h1>Asignaciones de planes</h1></div>
+  <a class="btn btn-sirema btn-touch" href="{% url 'revisiones:asignacion_crear' %}"><i class="bi bi-link-45deg" aria-hidden="true"></i> Asignar plan</a>
+</div>
+<form class="tarjeta mb-3" method="get">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-6"><label class="form-label" for="q">Buscar</label><input class="form-control" id="q" name="q" value="{{ request.GET.q }}" placeholder="Elemento, código o plan"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="ver">Mostrar</label>
+      <select class="form-select" id="ver" name="ver"><option value="">Vigentes</option><option value="todas" {% if request.GET.ver == 'todas' %}selected{% endif %}>Todas</option></select></div>
+    <div class="col-6 col-md-3"><button class="btn btn-negro btn-touch w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button></div>
+  </div>
+</form>
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Elemento</th><th>Ubicación</th><th>Plan</th><th>Responsable</th><th>Vigencia</th><th>Estado</th><th class="pe-3"></th></tr></thead>
+      <tbody>
+      {% for a in asignaciones %}
+        <tr>
+          <td class="ps-3"><a class="text-decoration-none" href="{% url 'inventario:detalle' a.material.pk %}"><span class="mono fw-semibold">{{ a.material.codigo_institucional|default:"s/c" }}</span> {{ a.material.nombre }}</a></td>
+          <td>{{ a.material.cajonera }}</td>
+          <td><a href="{% url 'revisiones:plan' a.plan.pk %}">{{ a.plan }}</a></td>
+          <td>{{ a.usuario_responsable.nombre_corto|default:"—" }}</td>
+          <td>{{ a.fecha_inicio|date:"d-m-Y" }}{% if a.fecha_termino %} a {{ a.fecha_termino|date:"d-m-Y" }}{% endif %}</td>
+          <td>{% if a.activa %}<span class="badge-sirema estado-realizada">Vigente</span>{% else %}<span class="badge-sirema estado-no-realizada">Cerrada</span>{% endif %}</td>
+          <td class="pe-3 acciones">{% if a.activa %}
+            <form method="post" action="{% url 'revisiones:asignacion_cerrar' a.pk %}" data-confirmar="¿Cerrar la asignación? No se generarán nuevas revisiones para {{ a.material.nombre }}.">{% csrf_token %}
+              <button class="btn btn-outline-negro btn-sm" type="submit">Cerrar</button></form>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7"><div class="vacio"><i class="bi bi-link"></i>No hay asignaciones.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

@@ -1,0 +1,9 @@
+# Dependencias de producción con versión fija (RNF-06, DAS 2.5)
+Django==5.2.18
+psycopg[binary]==3.3.6
+Pillow==12.3.0
+openpyxl==3.1.5
+weasyprint==70.0
+django-axes==8.3.1
+argon2-cffi==25.1.0
+gunicorn==26.2.0

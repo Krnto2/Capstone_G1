@@ -1,0 +1,19 @@
+# Entorno
+.venv/
+__pycache__/
+*.py[cod]
+.env
+
+# Datos locales
+db.sqlite3
+media/
+staticfiles/
+respaldos/
+
+# Certificados TLS (se generan en cada servidor)
+docker/certs/
+
+# Pruebas
+.coverage
+htmlcov/
+.pytest_cache/

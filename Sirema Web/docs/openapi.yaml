@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: SIREMA · API de ejecución de revisiones
+  version: 0.9.0
+  description: >
+    Solicitudes JSON que usa la pantalla M3 (Ejecutar revisión) para guardar cada punto en el momento
+    y subir las fotografías (DAS 4.3.3). Requieren sesión iniciada (cookie de sesión de Django) y el
+    encabezado X-CSRFToken. El resto del sistema usa páginas HTML generadas en el servidor.
+servers:
+  - url: https://sirema.local/revisiones/api
+paths:
+  /revisiones/{id_revision}/puntos/{id_punto}/:
+    post:
+      summary: Registrar el resultado de un punto de control (CU-C8, CU-C9)
+      parameters:
+        - $ref: "#/components/parameters/idRevision"
+        - name: id_punto
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resultado]
+              properties:
+                resultado: {type: string, enum: [conforme, observacion, falla]}
+                valor: {type: string, description: "Valor medido (numérico), «Sí»/«No» (booleano) o texto."}
+                observacion: {type: string, maxLength: 300, description: "Obligatoria si el resultado no es conforme."}
+      responses:
+        "200":
+          description: Respuesta guardada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Estado"
+                  - type: object
+                    properties:
+                      ok: {type: boolean, example: true}
+                      punto: {type: integer}
+                      resultado: {type: string}
+                      valor: {type: string, nullable: true}
+                      fuera_de_rango: {type: boolean}
+                      guardado: {type: string, example: "09:47"}
+        "400": {$ref: "#/components/responses/Error"}
+        "403": {description: Sin permiso para ejecutar revisiones}
+  /revisiones/{id_revision}/fotografias/:
+    post:
+      summary: Adjuntar fotografía de evidencia (CU-C10)
+      parameters:
+        - $ref: "#/components/parameters/idRevision"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo: {type: string, format: binary, description: "JPEG, PNG o WebP de hasta 10 MB."}
+                punto: {type: integer, description: "Punto de control; vacío para una foto general."}
+                descripcion: {type: string, maxLength: 200}
+      responses:
+        "201":
+          description: Fotografía almacenada, redimensionada a 1 MB e identificada por SHA-256
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Estado"
+                  - type: object
+                    properties:
+                      ok: {type: boolean}
+                      id: {type: string, format: uuid}
+                      url: {type: string}
+                      punto: {type: integer, nullable: true}
+                      hash: {type: string, minLength: 64, maxLength: 64}
+        "400": {$ref: "#/components/responses/Error"}
+  /revisiones/{id_revision}/estado/:
+    get:
+      summary: Consultar el avance y lo que falta para finalizar
+      parameters:
+        - $ref: "#/components/parameters/idRevision"
+      responses:
+        "200":
+          description: Estado de la revisión
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Estado"
+                  - type: object
+                    properties:
+                      ok: {type: boolean}
+                      estado: {type: string, enum: [pendiente, en_curso, realizada, vencida, no_realizada]}
+components:
+  parameters:
+    idRevision:
+      name: id_revision
+      in: path
+      required: true
+      schema: {type: integer}
+  responses:
+    Error:
+      description: Regla de negocio no cumplida
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: {type: boolean, example: false}
+              error: {type: string, example: "Una observación o falla exige un comentario."}
+  schemas:
+    Estado:
+      type: object
+      properties:
+        faltantes:
+          type: object
+          properties:
+            puntos: {type: array, items: {type: integer}}
+            fotos_puntos: {type: array, items: {type: integer}}
+            foto_general: {type: boolean}
+            texto: {type: string, example: "Faltan 2 puntos y 1 fotografía"}
+            completa: {type: boolean}
+        resumen:
+          type: object
+          properties:
+            resultado_global: {type: string, enum: [conforme, observacion, falla]}
+            respondidos: {type: integer}
+            total: {type: integer}
+            conformes: {type: integer}
+            observaciones: {type: integer}
+            fallas: {type: integer}
+            fotografias: {type: integer}
