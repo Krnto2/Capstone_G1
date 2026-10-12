@@ -1,0 +1,6 @@
+# Entornos y archivos generados que nunca deben subirse
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
