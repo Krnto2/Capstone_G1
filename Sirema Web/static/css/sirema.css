@@ -353,3 +353,7 @@ textarea.form-control { min-height: auto; }
   .sidebar, .topbar-movil, .nav-inferior, .no-imprimir { display: none !important; }
   .contenido { padding: 0; }
 }
+
+/* Búsqueda en vivo: atenúa la lista mientras llegan los resultados */
+#resultados { transition: opacity .15s; }
+#resultados.cargando { opacity: .55; }

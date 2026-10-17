@@ -3,7 +3,7 @@
 {% block contenido %}
 <div class="encabezado"><div><div class="ceja">Administración</div><h1>Bitácora de auditoría</h1></div>
   <span class="text-body-secondary small"><i class="bi bi-lock" aria-hidden="true"></i> Registro inalterable (RNF-09)</span></div>
-<form class="tarjeta mb-3" method="get">
+<form class="tarjeta mb-3" method="get" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-md-3">{% campo filtro.usuario clase="mb-0" %}</div>
     <div class="col-6 col-md-2">{% campo filtro.accion clase="mb-0" %}</div>
@@ -13,6 +13,7 @@
     <div class="col-12 col-md-1"><button class="btn btn-negro btn-touch w-100" type="submit" aria-label="Filtrar"><i class="bi bi-search"></i></button></div>
   </div>
 </form>
+<div id="resultados" aria-live="polite">
 <div class="tarjeta tarjeta-lista">
   <div class="table-responsive">
     <table class="table tabla-sirema small">
@@ -39,4 +40,5 @@
   </div>
 </div>
 {% include "componentes/_paginacion.html" %}
+</div>
 {% endblock %}

@@ -2,13 +2,14 @@
 {% block titulo %}Hallazgos{% endblock %}
 {% block contenido %}
 <div class="encabezado"><div><div class="ceja">Seguimiento de fallas</div><h1>Hallazgos</h1></div></div>
-<form class="tarjeta mb-3" method="get">
+<form class="tarjeta mb-3" method="get" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-6 col-md-4">{% campo filtro.estado clase="mb-0" %}</div>
     <div class="col-6 col-md-4">{% campo filtro.criticidad clase="mb-0" %}</div>
     <div class="col-12 col-md-4"><button class="btn btn-negro btn-touch w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button></div>
   </div>
 </form>
+<div id="resultados" aria-live="polite">
 <div class="tarjeta tarjeta-lista">
   <div class="table-responsive">
     <table class="table tabla-sirema">
@@ -31,4 +32,5 @@
   </div>
 </div>
 {% include "componentes/_paginacion.html" %}
+</div>
 {% endblock %}

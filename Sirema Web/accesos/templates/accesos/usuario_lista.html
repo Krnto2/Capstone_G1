@@ -5,7 +5,7 @@
   <div><div class="ceja">Administración</div><h1>Usuarios</h1></div>
   <a class="btn btn-sirema btn-touch" href="{% url 'accesos:usuario_crear' %}"><i class="bi bi-person-plus" aria-hidden="true"></i> Nuevo usuario</a>
 </div>
-<form class="tarjeta mb-3" method="get">
+<form class="tarjeta mb-3" method="get" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-md-5">{% campo filtro.q clase="mb-0" %}</div>
     <div class="col-6 col-md-3">{% campo filtro.rol clase="mb-0" %}</div>
@@ -13,6 +13,7 @@
     <div class="col-12 col-md-2"><button class="btn btn-negro btn-touch w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button></div>
   </div>
 </form>
+<div id="resultados" aria-live="polite">
 <div class="tarjeta tarjeta-lista">
   <div class="table-responsive">
     <table class="table tabla-sirema">
@@ -46,4 +47,5 @@
   </div>
 </div>
 {% include "componentes/_paginacion.html" %}
+</div>
 {% endblock %}

@@ -11,7 +11,7 @@
   {% endif %}
 </div>
 
-<form class="tarjeta mb-3" method="get" role="search" data-filtros>
+<form class="tarjeta mb-3" method="get" role="search" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-lg-4">{% campo filtro.q clase="mb-0" %}</div>
     <div class="col-6 col-lg-2">{% campo filtro.unidad clase="mb-0" %}</div>
@@ -25,6 +25,7 @@
   </div>
   {% if busqueda_corta %}<p class="small text-body-secondary mt-2 mb-0">Escriba al menos 2 caracteres para buscar por nombre o código.</p>{% endif %}
 </form>
+<div id="resultados" aria-live="polite">
 
 {# Celular: tarjetas #}
 <div class="d-lg-none">
@@ -65,4 +66,5 @@
   </table>
 </div>
 {% include "componentes/_paginacion.html" %}
+</div>
 {% endblock %}

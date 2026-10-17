@@ -2,7 +2,7 @@
 {% block titulo %}Revisiones{% endblock %}
 {% block contenido %}
 <div class="encabezado"><div><div class="ceja">Jefatura</div><h1>Revisiones</h1></div></div>
-<form class="tarjeta mb-3" method="get">
+<form class="tarjeta mb-3" method="get" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-md-6 col-xl-4">{% campo filtro.q clase="mb-0" %}</div>
     <div class="col-6 col-md-3 col-xl-2">{% campo filtro.estado clase="mb-0" %}</div>
@@ -16,6 +16,7 @@
     </div>
   </div>
 </form>
+<div id="resultados" aria-live="polite">
 <div class="tarjeta tarjeta-lista">
   <div class="table-responsive">
     <table class="table tabla-sirema">
@@ -40,4 +41,5 @@
   </div>
 </div>
 {% include "componentes/_paginacion.html" %}
+</div>
 {% endblock %}

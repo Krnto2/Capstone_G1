@@ -79,7 +79,7 @@ class FiltroMaterial(Formulario):
 
     q = forms.CharField(label="Buscar", required=False,
                         widget=forms.SearchInput(attrs={"placeholder": "Nombre o código (desde 2 caracteres)",
-                                                        "autocomplete": "off", "data-busqueda": "1"}))
+                                                        "autocomplete": "off"}))
     unidad = forms.ModelChoiceField(label="Unidad", queryset=Unidad.objects.all(), required=False,
                                     empty_label="Todas")
     cajonera = CampoCajonera(label="Cajonera", required=False)
