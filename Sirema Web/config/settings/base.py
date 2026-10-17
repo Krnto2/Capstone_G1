@@ -113,7 +113,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 AUTH_USER_MODEL = "accesos.Usuario"
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
-    "django.contrib.auth.backends.ModelBackend",
+    # Como ModelBackend, pero permite avisar «cuenta deshabilitada» (ver accesos/backends.py).
+    "accesos.backends.BackendSirema",
 ]
 
 # RNF-02: contraseñas con Argon2, nunca en texto plano.

@@ -22,6 +22,30 @@
     });
   });
 
+  // Modo claro / oscuro. El tema inicial lo aplica un script en <head> para evitar el destello.
+  var CLAVE_TEMA = "sirema-tema";
+  function temaActual() { return document.documentElement.getAttribute("data-bs-theme") === "dark" ? "oscuro" : "claro"; }
+  function temaGuardado() { try { return localStorage.getItem(CLAVE_TEMA); } catch (e) { return null; } }
+  function aplicarTema(tema, guardar) {
+    document.documentElement.setAttribute("data-bs-theme", tema === "oscuro" ? "dark" : "light");
+    if (guardar) { try { localStorage.setItem(CLAVE_TEMA, tema); } catch (e) { /* sin almacenamiento */ } }
+    document.querySelectorAll("[data-cambiar-tema]").forEach(function (boton) {
+      boton.setAttribute("aria-pressed", tema === "oscuro" ? "true" : "false");
+      var accion = tema === "oscuro" ? "Activar modo claro" : "Activar modo oscuro";
+      boton.title = accion;
+      if (boton.hasAttribute("data-solo-icono")) boton.setAttribute("aria-label", accion);
+    });
+  }
+  document.querySelectorAll("[data-cambiar-tema]").forEach(function (boton) {
+    boton.addEventListener("click", function () { aplicarTema(temaActual() === "oscuro" ? "claro" : "oscuro", true); });
+  });
+  aplicarTema(temaActual(), false);
+  if (window.matchMedia) {
+    var oscuroSistema = window.matchMedia("(prefers-color-scheme: dark)");
+    var alCambiarSistema = function (e) { if (!temaGuardado()) aplicarTema(e.matches ? "oscuro" : "claro", false); };
+    if (oscuroSistema.addEventListener) oscuroSistema.addEventListener("change", alCambiarSistema);
+  }
+
   // Los filtros del panel se aplican al cambiar.
   document.querySelectorAll("[data-autoenvio]").forEach(function (control) {
     control.addEventListener("change", function () { control.form.submit(); });

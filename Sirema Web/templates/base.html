@@ -7,6 +7,17 @@
   <title>{% block titulo %}SIREMA{% endblock %} · SIREMA</title>
   <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
   <link rel="apple-touch-icon" href="{% static 'img/icono-180.png' %}">
+  <script>
+    /* Tema claro u oscuro antes de dibujar la página (evita el destello blanco). */
+    (function () {
+      var tema = null;
+      try { tema = localStorage.getItem("sirema-tema"); } catch (e) {}
+      if (tema !== "claro" && tema !== "oscuro") {
+        tema = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro";
+      }
+      document.documentElement.setAttribute("data-bs-theme", tema === "oscuro" ? "dark" : "light");
+    })();
+  </script>
   <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
   <link rel="stylesheet" href="{% estatico 'css/sirema.css' %}">
@@ -27,6 +38,10 @@
     <div class="sidebar-pie">
       <div class="usuario">{{ user.nombre_completo }}</div>
       <div class="rol">{{ user.rol }}</div>
+      <button type="button" class="btn-tema" data-cambiar-tema aria-pressed="false">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i><i class="bi bi-sun" aria-hidden="true"></i>
+        <span class="texto-oscuro">Modo oscuro</span><span class="texto-claro">Modo claro</span>
+      </button>
       <a href="{% url 'accesos:perfil' %}"><i class="bi bi-person-gear" aria-hidden="true"></i> Mi perfil</a>
       <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
         <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
@@ -41,6 +56,9 @@
         <span><span class="nombre d-block">SIREMA</span><span class="compania">8ª Compañía · Talcahuano</span></span>
       </a>
       <div class="d-flex align-items-center gap-1">
+        <button type="button" class="btn-icono-oscuro btn-tema" data-cambiar-tema data-solo-icono aria-pressed="false" aria-label="Cambiar entre modo claro y oscuro">
+          <i class="bi bi-moon-stars" aria-hidden="true"></i><i class="bi bi-sun" aria-hidden="true"></i>
+        </button>
         <a class="btn-icono-oscuro" href="{% url 'revisiones:notificaciones' %}" aria-label="Notificaciones: {{ notificaciones_no_leidas|default:0 }} sin leer">
           <i class="bi bi-bell" aria-hidden="true"></i>
           {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}
@@ -93,6 +111,10 @@
   <div class="offcanvas-body p-0 d-flex flex-column">
     {% include "componentes/_navegacion.html" %}
     <div class="sidebar-pie">
+      <button type="button" class="btn-tema" data-cambiar-tema aria-pressed="false">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i><i class="bi bi-sun" aria-hidden="true"></i>
+        <span class="texto-oscuro">Modo oscuro</span><span class="texto-claro">Modo claro</span>
+      </button>
       <a href="{% url 'accesos:perfil' %}"><i class="bi bi-person-gear" aria-hidden="true"></i> Mi perfil</a>
       <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
         <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>

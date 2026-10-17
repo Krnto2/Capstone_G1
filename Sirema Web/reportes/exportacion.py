@@ -18,6 +18,8 @@ from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from .excel import exportar_xlsx  # noqa: F401  (diseño propio en reportes/excel.py)
+
 ENCABEZADOS = ["Código", "Elemento", "Categoría", "Ubicación", "Plan", "Responsable", "Fecha programada",
                "Fecha límite", "Estado", "Resultado", "Ejecutada por", "Fecha de ejecución", "En plazo"]
 
@@ -58,79 +60,6 @@ def exportar_csv(indicadores, revisiones):
     for revision in revisiones:
         escritor.writerow(_fila(revision))
     return ("﻿" + salida.getvalue()).encode("utf-8")
-
-
-def exportar_xlsx(indicadores, revisiones):
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
-    from openpyxl.utils import get_column_letter
-
-    libro = Workbook()
-    negrita = Font(bold=True)
-    relleno = PatternFill("solid", fgColor="111214")
-    blanco = Font(bold=True, color="FFFFFF")
-
-    resumen = libro.active
-    resumen.title = "Resumen"
-    resumen.append(["Reporte de cumplimiento SIREMA"])
-    resumen["A1"].font = Font(bold=True, size=14)
-    resumen.append([indicadores.filtros.etiqueta])
-    resumen.append([f"Generado el {timezone.localtime():%d-%m-%Y %H:%M}"])
-    resumen.append([])
-    filas = [
-        ("Cumplimiento del período (%)", indicadores.porcentaje if indicadores.porcentaje is not None else "—"),
-        ("Revisiones en plazo", indicadores.en_plazo),
-        ("Revisiones con fecha límite exigible", indicadores.exigibles),
-        ("Realizadas fuera de plazo", indicadores.fuera_de_plazo),
-        ("Revisiones vencidas", len(indicadores.vencidas)),
-        ("Hallazgos abiertos", len(indicadores.hallazgos_abiertos)),
-        ("Hallazgos de criticidad alta", indicadores.hallazgos_alta),
-        ("Elementos activos sin plan", indicadores.sin_plan),
-        ("Elementos activos", indicadores.total_activos),
-    ]
-    for etiqueta, valor in filas:
-        resumen.append([etiqueta, valor])
-    resumen.append([])
-    resumen.append(["Cumplimiento por unidad", "En plazo", "Exigibles", "%"])
-    for celda in resumen[resumen.max_row]:
-        celda.font = negrita
-    for fila in indicadores.por_unidad:
-        resumen.append([fila.etiqueta, fila.en_plazo, fila.exigibles, fila.porcentaje])
-    resumen.append([])
-    resumen.append(["Cumplimiento por categoría", "En plazo", "Exigibles", "%"])
-    for celda in resumen[resumen.max_row]:
-        celda.font = negrita
-    for fila in indicadores.por_categoria:
-        resumen.append([fila.etiqueta, fila.en_plazo, fila.exigibles, fila.porcentaje])
-    resumen.column_dimensions["A"].width = 42
-    for letra in "BCD":
-        resumen.column_dimensions[letra].width = 14
-
-    detalle = libro.create_sheet("Revisiones")
-    detalle.append(ENCABEZADOS)
-    for revision in revisiones:
-        detalle.append(_fila(revision))
-
-    hallazgos = libro.create_sheet("Hallazgos abiertos")
-    hallazgos.append(["Código", "Elemento", "Ubicación", "Descripción", "Criticidad", "Estado", "Apertura"])
-    for h in indicadores.hallazgos_abiertos:
-        material = h.revision.material
-        hallazgos.append([material.codigo_institucional or "", material.nombre, material.ubicacion, h.descripcion,
-                          h.get_criticidad_display(), h.get_estado_display(),
-                          timezone.localtime(h.fecha_apertura).strftime("%d-%m-%Y %H:%M")])
-
-    for hoja in (detalle, hallazgos):
-        for celda in hoja[1]:
-            celda.font = blanco
-            celda.fill = relleno
-            celda.alignment = Alignment(vertical="center")
-        hoja.freeze_panes = "A2"
-        for i, _ in enumerate(hoja[1], start=1):
-            hoja.column_dimensions[get_column_letter(i)].width = 20
-
-    salida = io.BytesIO()
-    libro.save(salida)
-    return salida.getvalue()
 
 
 @lru_cache(maxsize=1)

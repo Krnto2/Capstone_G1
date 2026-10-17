@@ -74,3 +74,25 @@ class TestCP10Reportes:
         eventos = client.get(reverse("inventario:detalle", args=[material.pk])).context["eventos"]
         assert len(eventos) >= 2
         assert eventos == sorted(eventos, key=lambda e: e["fecha"], reverse=True)
+
+
+class TestExcelConIdentidad:
+    def test_libro_con_hojas_emblema_filtros_y_fechas_reales(self, revision, bombero):
+        import datetime
+        import io
+
+        from openpyxl import load_workbook
+
+        from reportes.excel import exportar_xlsx
+
+        Hallazgo.objects.create(revision=revision, descripcion="Válvula dañada", criticidad="alta")
+        servicio = ServicioReportes(Filtros(hoy().year, hoy().month))
+        libro = load_workbook(io.BytesIO(exportar_xlsx(servicio.cumplimiento(), list(servicio.detalle()))))
+        assert libro.sheetnames == ["Resumen", "Revisiones", "Hallazgos abiertos"]
+        assert all(len(hoja._images) == 1 for hoja in libro.worksheets)  # emblema en cada hoja
+        revisiones = libro["Revisiones"]
+        assert revisiones["A7"].value == "CÓDIGO" and revisiones["A7"].fill.fgColor.rgb.endswith("0E0F10")
+        assert revisiones.freeze_panes == "A8" and revisiones.auto_filter.ref.startswith("A7:")
+        assert isinstance(revisiones["H8"].value, datetime.datetime)  # fecha límite como fecha de Excel
+        hallazgos = libro["Hallazgos abiertos"]
+        assert hallazgos["E8"].value == "Alta" and hallazgos["E8"].fill.fgColor.rgb.endswith("B4161C")

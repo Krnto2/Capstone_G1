@@ -157,3 +157,28 @@ class TestBusquedaUsuariosPorRut:
         assert bombero.correo in self._buscar(client, "juan")
         assert bombero.correo in self._buscar(client, "bombero@")
         assert self._buscar(client, "99999999") == []
+
+
+class TestCuentaDeshabilitada:
+    def _ingresar(self, client, correo, clave):
+        respuesta = client.post(reverse("accesos:login"), {"username": correo, "password": clave})
+        errores = " ".join(respuesta.context["form"].non_field_errors()) if respuesta.context else ""
+        return respuesta, errores
+
+    def test_con_clave_correcta_avisa_que_esta_deshabilitada(self, client, bombero):
+        bombero.desactivar()
+        respuesta, errores = self._ingresar(client, bombero.correo, CLAVE)
+        assert "deshabilitada" in errores and not respuesta.wsgi_request.user.is_authenticated
+        assert EventoAuditoria.objects.filter(usuario=bombero, datos_nuevos__evento="intento_cuenta_deshabilitada").exists()
+
+    def test_con_clave_incorrecta_no_revela_el_estado_de_la_cuenta(self, client, bombero):
+        bombero.desactivar()
+        _, errores = self._ingresar(client, bombero.correo, "ClaveMala123")
+        assert "incorrectos" in errores and "deshabilitada" not in errores
+
+    def test_al_desactivar_una_cuenta_con_sesion_abierta_pierde_el_acceso(self, client, bombero):
+        client.force_login(bombero)
+        assert client.get(reverse("revisiones:mis_revisiones")).status_code == 200
+        bombero.desactivar()
+        respuesta = client.get(reverse("revisiones:mis_revisiones"))
+        assert respuesta.status_code == 302 and reverse("accesos:login") in respuesta.url

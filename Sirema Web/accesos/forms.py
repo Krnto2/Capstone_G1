@@ -4,8 +4,9 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, Se
 
 from nucleo.enums import AccionAuditoria
 from nucleo.formularios import CampoFecha, Formulario, FormularioBootstrap, FormularioModelo
-from nucleo.utilidades import formatear_rut, rut_valido
+from nucleo.utilidades import formatear_rut, ip_cliente, rut_valido
 
+from . import auditoria
 from .models import Rol, Usuario
 
 
@@ -22,8 +23,17 @@ class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
     error_messages = {
         "invalid_login": "Correo o contraseña incorrectos. Tras 5 intentos fallidos la cuenta "
                          "se bloquea por 15 minutos.",
-        "inactive": "Esta cuenta está desactivada. Consulte al administrador de la compañía.",
+        "inactive": "Su cuenta está deshabilitada. Comuníquese con el administrador de la compañía "
+                    "para reactivarla.",
     }
+
+    def confirm_login_allowed(self, user):
+        """Una cuenta deshabilitada no ingresa; el intento queda en la bitácora (RNF-09)."""
+        if not user.is_active:
+            auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
+                                nuevos={"evento": "intento_cuenta_deshabilitada"}, usuario=user,
+                                ip=ip_cliente(self.request))
+        super().confirm_login_allowed(user)
 
 
 class FormularioCambioContrasena(FormularioBootstrap, PasswordChangeForm):
