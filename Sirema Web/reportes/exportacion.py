@@ -6,8 +6,14 @@ necesita las bibliotecas Pango del sistema, incluidas en la imagen Docker; si
 no están (por ejemplo, en un equipo Windows de desarrollo) se entrega la misma
 plantilla lista para imprimir o guardar como PDF desde el navegador.
 """
+import base64
 import csv
 import io
+from functools import lru_cache
+from pathlib import Path
+
+from django.conf import settings
+from django.contrib.staticfiles import finders
 
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -127,10 +133,27 @@ def exportar_xlsx(indicadores, revisiones):
     return salida.getvalue()
 
 
+@lru_cache(maxsize=1)
+def _logo_data_uri():
+    """Emblema incrustado en el HTML: sirve igual para WeasyPrint y para la vista imprimible."""
+    ruta = finders.find("img/logo-8.png")
+    return "data:image/png;base64," + base64.b64encode(Path(ruta).read_bytes()).decode() if ruta else ""
+
+
+def _fuentes_oswald():
+    """Rutas de Oswald: archivo local para WeasyPrint; la vista imprimible usa las URL estáticas."""
+    rutas = {}
+    for peso in (500, 700):
+        ruta = finders.find(f"vendor/oswald/oswald-latin-{peso}-normal.woff2")
+        rutas[peso] = Path(ruta).as_uri() if ruta else ""
+    return rutas
+
+
 def html_reporte(indicadores, revisiones, para_imprimir=False):
     return render_to_string("reportes/reporte_pdf.html", {
         "ind": indicadores, "revisiones": revisiones, "generado": timezone.localtime(),
-        "para_imprimir": para_imprimir,
+        "para_imprimir": para_imprimir, "logo": _logo_data_uri(), "SIREMA_VERSION": settings.SIREMA_VERSION,
+        "fuentes": None if para_imprimir else _fuentes_oswald(),
     })
 
 

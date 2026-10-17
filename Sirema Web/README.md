@@ -98,6 +98,16 @@ docker compose up -d
 docker compose ps                                     # los 4 contenedores deben quedar «healthy»
 ```
 
+Para probar en un computador con datos de demostración (nunca en el cuartel):
+
+```bash
+docker compose exec sirema-web python manage.py cargar_datos_demo
+```
+
+Luego abra https://localhost y acepte la advertencia del certificado autofirmado. En este modo la pantalla de
+ingreso no muestra los usuarios de prueba: están en la sección «Usuarios de demostración».
+`docker compose down` detiene los contenedores y conserva los datos; `docker compose down -v` los borra.
+
 | Contenedor | Imagen | Función |
 |---|---|---|
 | `sirema-proxy` | nginx:1.27-alpine | HTTPS (443, y 80 que redirige), estáticos, fotos con X-Accel-Redirect |

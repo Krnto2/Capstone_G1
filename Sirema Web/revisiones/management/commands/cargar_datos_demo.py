@@ -291,8 +291,9 @@ class Command(BaseCommand):
             if revision is None:
                 continue
             if revision.estado == EstadoRevision.REALIZADA:
-                revision.resultados.all().delete()
+                # Primero las fotos: fk_foto_resultado (RESTRICT) impide borrar un resultado con fotos.
                 revision.fotografias.all().delete()
+                revision.resultados.all().delete()
             cuando = datetime.combine(min(revision.fecha_limite, hoy_ - timedelta(days=1)), time(10, 30), zona)
             self._ejecutar(revision, revision.usuario_responsable, cuando, "falla")
             hallazgo = Hallazgo.objects.create(revision=revision, descripcion=descripcion, criticidad=criticidad,

@@ -132,3 +132,28 @@ class TestUsuariosDemo:
         settings.DEBUG = False
         respuesta = client.get(reverse("accesos:login"))
         assert respuesta.context["usuarios_demo"] == [] and respuesta.context["contrasena_demo"] is None
+
+
+class TestBusquedaUsuariosPorRut:
+    def _buscar(self, client, texto):
+        respuesta = client.get(reverse("accesos:usuarios"), {"q": texto})
+        return [u.correo for u in respuesta.context["usuarios"]]
+
+    @pytest.mark.parametrize("texto", ["15.555.555-6", "15555555-6", "155555556", "15555555", "555.555", "5555-6"])
+    def test_encuentra_el_rut_con_o_sin_puntos_y_guion(self, client, administrador, bombero, texto):
+        client.force_login(administrador)
+        assert bombero.correo in self._buscar(client, texto)
+
+    def test_rut_con_k_en_minuscula(self, client, administrador):
+        from nucleo.utilidades import digito_verificador, formatear_rut
+        cuerpo = next(str(n) for n in range(20000000, 20001000) if digito_verificador(n) == "K")
+        con_k = Usuario.objects.create(rut=formatear_rut(cuerpo + "K"), nombre="Kim", apellidos="Prueba",
+                                       correo="k@prueba.cl", rol=Rol.objects.get(nombre=Rol.BOMBERO), password="!")
+        client.force_login(administrador)
+        assert con_k.correo in self._buscar(client, cuerpo + "k")
+
+    def test_la_busqueda_por_nombre_y_correo_sigue_funcionando(self, client, administrador, bombero):
+        client.force_login(administrador)
+        assert bombero.correo in self._buscar(client, "juan")
+        assert bombero.correo in self._buscar(client, "bombero@")
+        assert self._buscar(client, "99999999") == []

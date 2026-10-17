@@ -8,7 +8,7 @@ from nucleo.views import inicio
 
 @login_not_required
 def favicon(request):
-    return redirect(static("img/favicon.svg"), permanent=True)
+    return redirect(static("img/favicon.png"), permanent=True)
 
 
 urlpatterns = [

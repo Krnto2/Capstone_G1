@@ -106,6 +106,8 @@ class FormularioUsuario(FormularioModelo):
 
 
 class FiltroUsuarios(Formulario):
+    es_filtro = True
+
     q = forms.CharField(label="Buscar", required=False,
                         widget=forms.TextInput(attrs={"placeholder": "Nombre, RUT o correo"}))
     rol = forms.ModelChoiceField(label="Rol", queryset=Rol.objects.all(), required=False, empty_label="Todos")
@@ -114,6 +116,8 @@ class FiltroUsuarios(Formulario):
 
 
 class FiltroBitacora(Formulario):
+    es_filtro = True
+
     usuario = forms.ModelChoiceField(label="Usuario", required=False, empty_label="Todos",
                                      queryset=Usuario.objects.all())
     accion = forms.ChoiceField(label="Acción", required=False,

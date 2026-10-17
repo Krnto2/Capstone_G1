@@ -1,4 +1,9 @@
+import os
+
 from django import template
+from django.conf import settings
+from django.contrib.staticfiles import finders
+from django.templatetags.static import static
 from django.utils.html import format_html
 
 from nucleo.utilidades import formatear_rut
@@ -85,6 +90,18 @@ def numero(valor):
     if "." in texto:
         texto = texto.rstrip("0").rstrip(".")
     return texto.replace(".", ",")
+
+
+@register.simple_tag
+def estatico(ruta):
+    """Como {% static %}, pero en desarrollo agrega la fecha del archivo para que el navegador
+    no use una versión antigua en caché. En producción los nombres ya llevan hash (Manifest)."""
+    url = static(ruta)
+    if settings.DEBUG:
+        archivo = finders.find(ruta)
+        if archivo:
+            url += f"?v={int(os.path.getmtime(archivo))}"
+    return url
 
 
 @register.simple_tag(takes_context=True)

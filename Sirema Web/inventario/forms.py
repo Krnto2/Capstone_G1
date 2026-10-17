@@ -75,6 +75,8 @@ class FormularioMaterial(FormularioModelo):
 class FiltroMaterial(Formulario):
     """RF-05: búsqueda por nombre o código y filtros combinados."""
 
+    es_filtro = True
+
     q = forms.CharField(label="Buscar", required=False,
                         widget=forms.SearchInput(attrs={"placeholder": "Nombre o código (desde 2 caracteres)",
                                                         "autocomplete": "off", "data-busqueda": "1"}))

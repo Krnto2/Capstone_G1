@@ -1,21 +1,40 @@
-{% load sirema %}<!doctype html>
+{% load static sirema %}<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <title>Reporte de cumplimiento SIREMA · {{ ind.filtros.periodo }}</title>
 <style>
-  @page { size: A4 landscape; margin: 14mm 12mm; @bottom-right { content: "Página " counter(page) " de " counter(pages); font-size: 8pt; color: #555; } }
-  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #15171c; margin: 0; }
-  header { border-bottom: 3px solid #111214; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
-  h1 { font-size: 16pt; margin: 0; } .sub { color: #555; }
-  .kpis { display: flex; gap: 8px; margin: 8px 0 12px; }
-  .kpi { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: 6px 8px; }
-  .kpi b { display: block; font-size: 15pt; }
-  h2 { font-size: 11pt; margin: 12px 0 4px; }
+  {% if fuentes %}
+  @font-face { font-family: "Oswald"; font-weight: 500; src: url("{{ fuentes.500 }}"); }
+  @font-face { font-family: "Oswald"; font-weight: 700; src: url("{{ fuentes.700 }}"); }
+  {% else %}
+  @font-face { font-family: "Oswald"; font-weight: 500; src: url("{% static 'vendor/oswald/oswald-latin-500-normal.woff2' %}"); }
+  @font-face { font-family: "Oswald"; font-weight: 700; src: url("{% static 'vendor/oswald/oswald-latin-700-normal.woff2' %}"); }
+  {% endif %}
+  @page { size: A4 landscape; margin: 12mm 12mm 14mm;
+          @bottom-left { content: "SIREMA · Octava Compañía de Bomberos de Talcahuano"; font-size: 7.5pt; color: #666; }
+          @bottom-right { content: "Página " counter(page) " de " counter(pages); font-size: 7.5pt; color: #666; } }
+  body { font-family: "DejaVu Sans", "Segoe UI", Arial, sans-serif; font-size: 8.6pt; color: #15171a; margin: 0; }
+  .titulo { font-family: "Oswald", "Arial Narrow", Arial, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+  header { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #0e0f10; padding-bottom: 8px; }
+  header img { height: 52px; }
+  header .bloque { flex: 1; }
+  header .compania { font-family: "Oswald", Arial, sans-serif; font-weight: 500; font-size: 8pt; letter-spacing: .16em; text-transform: uppercase; color: #1a6bb5; }
+  header h1 { font-family: "Oswald", Arial, sans-serif; font-weight: 700; font-size: 17pt; margin: 1px 0 0; text-transform: uppercase; letter-spacing: .03em; }
+  header .meta { text-align: right; color: #4f555d; font-size: 8pt; line-height: 1.5; }
+  .franja { height: 3px; background: #d3121a; margin-bottom: 10px; }
+  .filtros { color: #4f555d; margin: 0 0 8px; }
+  .kpis { display: flex; gap: 8px; margin: 6px 0 12px; }
+  .kpi { flex: 1; border: 1px solid #d9dde2; border-top: 3px solid #1a6bb5; padding: 6px 9px; }
+  .kpi.rojo { border-top-color: #d3121a; } .kpi.ambar { border-top-color: #b26c00; } .kpi.negro { border-top-color: #0e0f10; }
+  .kpi .etq { font-family: "Oswald", Arial, sans-serif; font-weight: 500; font-size: 7.5pt; letter-spacing: .1em; text-transform: uppercase; color: #4f555d; }
+  .kpi b { display: block; font-family: "Oswald", Arial, sans-serif; font-weight: 700; font-size: 18pt; line-height: 1.15; }
+  h2 { font-family: "Oswald", Arial, sans-serif; font-weight: 700; font-size: 10.5pt; letter-spacing: .06em; text-transform: uppercase; margin: 12px 0 4px; padding-left: 6px; border-left: 3px solid #1a6bb5; }
   table { width: 100%; border-collapse: collapse; }
-  th { background: #111214; color: #fff; text-align: left; padding: 4px 5px; font-size: 8pt; }
-  td { border-bottom: 1px solid #ddd; padding: 3px 5px; font-size: 8pt; vertical-align: top; }
-  .falla { color: #c02424; font-weight: bold; } .obs { color: #8f5300; font-weight: bold; } .ok { color: #17703d; font-weight: bold; }
+  th { background: #0e0f10; color: #fff; text-align: left; padding: 4px 5px; font-family: "Oswald", Arial, sans-serif; font-weight: 500; font-size: 7.5pt; letter-spacing: .08em; text-transform: uppercase; }
+  td { border-bottom: 1px solid #e1e4e8; padding: 3px 5px; font-size: 8pt; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f7f8; }
+  .falla { color: #b4161c; font-weight: bold; } .obs { color: #8a5300; font-weight: bold; } .ok { color: #1d7a35; font-weight: bold; }
   .aviso { background: #fff7e0; border: 1px solid #e6c46e; padding: 8px 10px; margin-bottom: 10px; font-family: Arial, sans-serif; }
   @media print { .aviso { display: none; } }
 </style>
@@ -23,14 +42,20 @@
 <body>
 {% if para_imprimir %}<div class="aviso">Vista lista para imprimir: use <b>Ctrl + P → Guardar como PDF</b>. En el servidor del cuartel el PDF se descarga directamente.</div>{% endif %}
 <header>
-  <div><h1>Reporte de cumplimiento · SIREMA</h1><div class="sub">{{ ind.filtros.etiqueta }}</div></div>
-  <div class="sub">Octava Compañía del Cuerpo de Bomberos de Talcahuano<br>Generado el {{ generado|date:"d-m-Y H:i" }}</div>
+  {% if logo %}<img src="{{ logo }}" alt="Emblema de la Octava Compañía">{% endif %}
+  <div class="bloque">
+    <div class="compania">Bomba Huachipato · Octava Compañía de Bomberos de Talcahuano</div>
+    <h1>Reporte de cumplimiento</h1>
+  </div>
+  <div class="meta">SIREMA v{{ SIREMA_VERSION|default:"" }}<br>Generado el {{ generado|date:"d-m-Y H:i" }}</div>
 </header>
+<div class="franja"></div>
+<p class="filtros">{{ ind.filtros.etiqueta }}</p>
 <div class="kpis">
-  <div class="kpi">Cumplimiento del período<b>{{ ind.porcentaje|porcentaje }}</b>{{ ind.en_plazo }} de {{ ind.exigibles }} en plazo</div>
-  <div class="kpi">Revisiones vencidas<b class="falla">{{ ind.vencidas|length }}</b>{{ ind.detalle_vencidas|default:"Ninguna" }}</div>
-  <div class="kpi">Hallazgos abiertos<b class="obs">{{ ind.hallazgos_abiertos|length }}</b>{{ ind.hallazgos_alta }} de criticidad alta</div>
-  <div class="kpi">Elementos activos sin plan<b>{{ ind.sin_plan }}</b>de {{ ind.total_activos }} activos</div>
+  <div class="kpi"><span class="etq">Cumplimiento del período</span><b>{{ ind.porcentaje|porcentaje }}</b>{{ ind.en_plazo }} de {{ ind.exigibles }} en plazo</div>
+  <div class="kpi rojo"><span class="etq">Revisiones vencidas</span><b class="falla">{{ ind.vencidas|length }}</b>{{ ind.detalle_vencidas|default:"Ninguna" }}</div>
+  <div class="kpi ambar"><span class="etq">Hallazgos abiertos</span><b class="obs">{{ ind.hallazgos_abiertos|length }}</b>{{ ind.hallazgos_alta }} de criticidad alta</div>
+  <div class="kpi negro"><span class="etq">Elementos activos sin plan</span><b>{{ ind.sin_plan }}</b>de {{ ind.total_activos }} activos</div>
 </div>
 {% if ind.por_unidad %}
 <h2>Cumplimiento por unidad</h2>

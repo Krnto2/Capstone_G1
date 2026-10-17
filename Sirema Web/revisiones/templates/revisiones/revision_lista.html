@@ -4,13 +4,16 @@
 <div class="encabezado"><div><div class="ceja">Jefatura</div><h1>Revisiones</h1></div></div>
 <form class="tarjeta mb-3" method="get">
   <div class="row g-2 align-items-end">
-    <div class="col-12 col-md-3">{% campo filtro.q clase="mb-0" %}</div>
-    <div class="col-6 col-md-2">{% campo filtro.estado clase="mb-0" %}</div>
-    <div class="col-6 col-md-2">{% campo filtro.unidad clase="mb-0" %}</div>
-    <div class="col-12 col-md-2">{% campo filtro.responsable clase="mb-0" %}</div>
-    <div class="col-6 col-md-1">{% campo filtro.desde clase="mb-0" %}</div>
-    <div class="col-6 col-md-1">{% campo filtro.hasta clase="mb-0" %}</div>
-    <div class="col-12 col-md-1"><button class="btn btn-negro btn-touch w-100" type="submit" aria-label="Filtrar"><i class="bi bi-search"></i></button></div>
+    <div class="col-12 col-md-6 col-xl-4">{% campo filtro.q clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.estado clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.unidad clase="mb-0" %}</div>
+    <div class="col-12 col-md-6 col-xl-4">{% campo filtro.responsable clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.desde clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.hasta clase="mb-0" %}</div>
+    <div class="col-12 col-md-6 col-xl-3 d-flex gap-2">
+      <button class="btn btn-negro btn-touch flex-grow-1" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button>
+      <a class="btn btn-link btn-touch" href="{% url 'revisiones:lista' %}">Limpiar</a>
+    </div>
   </div>
 </form>
 <div class="tarjeta tarjeta-lista">

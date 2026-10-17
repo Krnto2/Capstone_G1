@@ -6,7 +6,7 @@
       <label class="form-check-label" for="{{ campo.id_for_label }}">{{ etiqueta|default:campo.label }}</label>
     </div>
   {% else %}
-    <label class="form-label" for="{{ campo.id_for_label }}">{{ etiqueta|default:campo.label }}{% if not campo.field.required %} <span class="fw-normal text-body-secondary small">(opcional)</span>{% endif %}</label>
+    <label class="form-label" for="{{ campo.id_for_label }}">{{ etiqueta|default:campo.label }}{% if not campo.field.required and not campo.form.es_filtro %} <span class="fw-normal text-body-secondary small">(opcional)</span>{% endif %}</label>
     {{ campo }}
   {% endif %}
   {% if ayuda or campo.help_text %}<div class="form-text">{{ ayuda|default:campo.help_text|safe }}</div>{% endif %}

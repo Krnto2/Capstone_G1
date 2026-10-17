@@ -1,35 +1,39 @@
-{% extends "base.html" %}{% load sirema %}
+{% extends "base.html" %}{% load static sirema %}
 {% block titulo %}Iniciar sesión{% endblock %}
 {% block cuerpo %}
-<div class="login">
-  <div class="login-cabecera">
-    <div><span class="logo-compania" aria-hidden="true">8<sup>a</sup></span></div>
-    <div class="marca">SIREMA</div>
-    <div style="color:#d6d9df">Revisiones del material menor</div>
-  </div>
-  <div class="login-lado">
-    <main id="contenido" class="login-cuerpo">
-      <h1 class="h3 fw-bold mb-1">Iniciar sesión</h1>
-      <p class="text-body-secondary mb-4">Ingrese con su correo y contraseña de la compañía.</p>
-      {% include "componentes/_errores_formulario.html" %}
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ next }}">
-        {% campo form.username %}
-        <div class="mb-3">
-          <label class="form-label" for="{{ form.password.id_for_label }}">Contraseña</label>
-          <div class="input-group">
-            {{ form.password }}
-            <button class="btn btn-outline-secondary" type="button" data-alternar-clave="#{{ form.password.id_for_label }}" aria-label="Mostrar contraseña" style="min-width:52px"><i class="bi bi-eye" aria-hidden="true"></i></button>
+<div class="ingreso">
+  <header class="ingreso-portada">
+    <img src="{% static 'img/logo-8-oscuro.png' %}" alt="Emblema de la Octava Compañía de Bomberos de Talcahuano" width="300" height="158">
+    <div class="lugar">Talcahuano · Chile · Desde 1948</div>
+    <h1><span class="azul">Bomba</span> Huachipato</h1>
+    <div class="compania">Octava Compañía de Bomberos</div>
+    <div class="sistema"><strong>SIREMA</strong><br>Sistema de revisiones periódicas del material menor</div>
+  </header>
+  <div class="ingreso-lado">
+    <main id="contenido" class="ingreso-cuerpo">
+      <div class="ingreso-formulario">
+        <h2>Iniciar sesión</h2>
+        <p class="text-body-secondary mb-4">Ingrese con su correo y contraseña de la compañía.</p>
+        {% include "componentes/_errores_formulario.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          {% campo form.username %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.password.id_for_label }}">Contraseña</label>
+            <div class="input-group">
+              {{ form.password }}
+              <button class="btn btn-outline-secondary" type="button" data-alternar-clave="#{{ form.password.id_for_label }}" aria-label="Mostrar contraseña" style="min-width:52px"><i class="bi bi-eye" aria-hidden="true"></i></button>
+            </div>
+            {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
           </div>
-          {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-        </div>
-        <button type="submit" class="btn btn-sirema btn-lg w-100 mt-2">Ingresar</button>
-      </form>
-      <p class="text-body-secondary small mt-4 mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> ¿Olvidó su contraseña? Solicite el cambio al administrador de la compañía.</p>
-      <p class="text-body-secondary small mb-0"><i class="bi bi-lock" aria-hidden="true"></i> Tras 5 intentos fallidos la cuenta se bloquea por 15 minutos.</p>
+          <button type="submit" class="btn btn-sirema btn-lg w-100 mt-2">Ingresar</button>
+        </form>
+        <p class="text-body-secondary small mt-4 mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> ¿Olvidó su contraseña? Solicite el cambio al administrador de la compañía.</p>
+        <p class="text-body-secondary small mb-0"><i class="bi bi-lock" aria-hidden="true"></i> Tras 5 intentos fallidos la cuenta se bloquea por 15 minutos.</p>
+      </div>
       {% if usuarios_demo %}
-        <div class="aviso-inline mt-4" aria-label="Usuarios de demostración">
+        <div class="aviso-inline mt-3" aria-label="Usuarios de demostración">
           <div class="fw-bold mb-1"><i class="bi bi-person-badge" aria-hidden="true"></i> Modo demostración (datos ficticios)</div>
           <div class="small mb-2">Contraseña para todos: <code class="fw-bold">{{ contrasena_demo }}</code></div>
           <ul class="list-unstyled small mb-0">
@@ -44,7 +48,7 @@
         </div>
       {% endif %}
     </main>
-    <footer class="login-pie">Octava Compañía · Cuerpo de Bomberos de Talcahuano<br>Red local del cuartel · SIREMA v{{ SIREMA_VERSION }}</footer>
+    <footer class="ingreso-pie">Octava Compañía · Cuerpo de Bomberos de Talcahuano<br>Red local del cuartel · SIREMA v{{ SIREMA_VERSION }}</footer>
   </div>
 </div>
 {% endblock %}

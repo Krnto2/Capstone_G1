@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Value
+from django.db.models.functions import Replace, Upper
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -12,6 +13,7 @@ from django.views import View
 from django.views.generic import CreateView, FormView, ListView, TemplateView, UpdateView
 
 from nucleo.enums import AccionAuditoria
+from nucleo.utilidades import limpiar_rut
 
 from . import auditoria, demo
 from .forms import (FiltroBitacora, FiltroUsuarios, FormularioCambioContrasena, FormularioIngreso,
@@ -76,8 +78,16 @@ class UsuarioListaView(PermisoRequeridoMixin, ListView):
             datos = self.filtro.cleaned_data
             if datos["q"]:
                 q = datos["q"].strip()
-                usuarios = usuarios.filter(Q(nombre__icontains=q) | Q(apellidos__icontains=q)
-                                           | Q(rut__icontains=q) | Q(correo__icontains=q))
+                condicion = (Q(nombre__icontains=q) | Q(apellidos__icontains=q) | Q(rut__icontains=q)
+                             | Q(correo__icontains=q))
+                # El RUT se guarda como 12.345.678-9: se compara sin puntos, guion ni mayúsculas,
+                # para encontrarlo escrito de cualquier forma (123456789, 12345678-9, 12.345.678-9).
+                rut_buscado = limpiar_rut(q)
+                if any(c.isdigit() for c in rut_buscado):
+                    usuarios = usuarios.annotate(rut_limpio=Upper(Replace(Replace(
+                        "rut", Value("."), Value("")), Value("-"), Value(""))))
+                    condicion |= Q(rut_limpio__contains=rut_buscado)
+                usuarios = usuarios.filter(condicion)
             if datos["rol"]:
                 usuarios = usuarios.filter(rol=datos["rol"])
             if datos["estado"]:

@@ -162,6 +162,8 @@ class FormularioReasignar(Formulario):
 
 
 class FiltroRevisiones(Formulario):
+    es_filtro = True
+
     q = forms.CharField(label="Elemento", required=False,
                         widget=forms.SearchInput(attrs={"placeholder": "Nombre o código"}))
     estado = forms.ChoiceField(label="Estado", required=False, choices=[("", "Todos")] + list(EstadoRevision.choices))
@@ -178,6 +180,8 @@ class FiltroRevisiones(Formulario):
 
 
 class FiltroHallazgos(Formulario):
+    es_filtro = True
+
     estado = forms.ChoiceField(label="Estado", required=False,
                                choices=[("abiertos", "Abiertos y en reparación")] + list(EstadoHallazgo.choices)
                                + [("todos", "Todos")])
