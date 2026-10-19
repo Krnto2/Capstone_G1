@@ -36,6 +36,13 @@
     </a>
     {% include "componentes/_navegacion.html" %}
     <div class="sidebar-pie">
+      <a href="{% url 'accesos:perfil' %}" class="avatar-enlace" aria-label="Mi perfil">
+        {% if user.tiene_foto %}
+          <img class="avatar-img" src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="" width="48" height="48" style="width:48px;height:48px">
+        {% else %}
+          <span class="avatar" style="width:48px;height:48px;font-size:1rem">{{ user.iniciales }}</span>
+        {% endif %}
+      </a>
       <div class="usuario">{{ user.nombre_completo }}</div>
       <div class="rol">{{ user.rol }}</div>
       <button type="button" class="btn-tema" data-cambiar-tema aria-pressed="false">
@@ -63,7 +70,7 @@
           <i class="bi bi-bell" aria-hidden="true"></i>
           {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}
         </a>
-        <a class="avatar text-decoration-none" href="{% url 'accesos:perfil' %}" aria-label="Mi perfil">{{ user.iniciales }}</a>
+        <a class="avatar text-decoration-none" href="{% url 'accesos:perfil' %}" aria-label="Mi perfil">{% if user.tiene_foto %}<img class="avatar-img" src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="" width="38" height="38">{% else %}{{ user.iniciales }}{% endif %}</a>
       </div>
     </header>
 

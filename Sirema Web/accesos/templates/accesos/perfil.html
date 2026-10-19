@@ -5,7 +5,11 @@
 <div class="encabezado"><div><div class="ceja">{{ user.rol }}</div><h1>Mi perfil</h1></div></div>
 <div class="tarjeta">
   <div class="d-flex align-items-center gap-3 mb-3">
-    <span class="avatar" style="width:56px;height:56px;font-size:1.1rem">{{ user.iniciales }}</span>
+    {% if user.tiene_foto %}
+      <img class="avatar-img" src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="Foto de perfil de {{ user.nombre_completo }}" width="56" height="56" style="width:56px;height:56px">
+    {% else %}
+      <span class="avatar" style="width:56px;height:56px;font-size:1.1rem">{{ user.iniciales }}</span>
+    {% endif %}
     <div><div class="fw-bold fs-5">{{ user.nombre_completo }}</div><div class="text-body-secondary">{{ user.correo }}</div></div>
   </div>
   <dl class="row lista-datos mb-0">
@@ -14,6 +18,25 @@
     <dt class="col-sm-4">Rol</dt><dd class="col-sm-8">{{ user.rol }}</dd>
     <dt class="col-sm-4">Último acceso</dt><dd class="col-sm-8">{{ user.last_login|date:"d-m-Y H:i"|default:"—" }}</dd>
   </dl>
+</div>
+<div class="tarjeta">
+  <div class="tarjeta-titulo">Foto de perfil</div>
+  <p class="text-body-secondary">La imagen aparece junto a su nombre. Si no sube ninguna, se muestran sus iniciales.</p>
+  <form method="post" action="{% url 'accesos:foto_perfil_subir' %}" enctype="multipart/form-data" class="d-flex flex-column flex-sm-row align-items-sm-end gap-2">
+    {% csrf_token %}
+    <div class="flex-grow-1">
+      <label class="form-label" for="{{ form_foto.foto.id_for_label }}">{{ form_foto.foto.label }}</label>
+      {{ form_foto.foto }}
+      <div class="form-text">{{ form_foto.foto.help_text }}</div>
+    </div>
+    <button type="submit" class="btn btn-negro btn-touch"><i class="bi bi-upload" aria-hidden="true"></i> Guardar foto</button>
+  </form>
+  {% if user.tiene_foto %}
+    <form method="post" action="{% url 'accesos:foto_perfil_eliminar' %}" class="mt-2" data-confirmar="¿Quitar su foto de perfil?">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-negro btn-sm btn-touch"><i class="bi bi-trash" aria-hidden="true"></i> Quitar foto actual</button>
+    </form>
+  {% endif %}
 </div>
 <div class="tarjeta">
   <div class="tarjeta-titulo">Seguridad</div>

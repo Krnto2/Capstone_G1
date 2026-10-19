@@ -17,3 +17,6 @@ docker/certs/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Respaldos locales de configuración (nunca subir)
+*.bak

@@ -82,7 +82,7 @@ class ServicioAlmacenamiento:
             raise ErrorAlmacenamiento("Ruta de archivo no válida.")
         return ruta
 
-    def guardar(self, archivo):
+    def guardar(self, archivo, subcarpeta="fotografias"):
         """Valida, redimensiona a 1 MB como máximo, calcula el hash y escribe."""
         tamano = getattr(archivo, "size", None)
         if tamano is not None and tamano > settings.SIREMA_FOTO_MAX_BYTES:
@@ -111,7 +111,7 @@ class ServicioAlmacenamiento:
 
         salida = self._redimensionar(imagen)
         identificador = uuid.uuid4()
-        relativa = Path("fotografias") / f"{ahora:%Y}" / f"{ahora:%m}" / f"{identificador}.jpg"
+        relativa = Path(subcarpeta) / f"{ahora:%Y}" / f"{ahora:%m}" / f"{identificador}.jpg"
         destino = self.raiz / relativa
         destino.parent.mkdir(parents=True, exist_ok=True)
         destino.write_bytes(salida)
@@ -157,6 +157,15 @@ class ServicioAlmacenamiento:
 
     def leer(self, ruta_relativa):
         return self.ruta_absoluta(ruta_relativa).read_bytes()
+
+    def eliminar(self, ruta_relativa):
+        """Borra un archivo del volumen media. No falla si ya no existe."""
+        if not ruta_relativa:
+            return
+        try:
+            self.ruta_absoluta(ruta_relativa).unlink(missing_ok=True)
+        except (OSError, ErrorAlmacenamiento):
+            pass
 
     def verificar(self, foto):
         """True si el archivo existe y su hash coincide con el registrado."""

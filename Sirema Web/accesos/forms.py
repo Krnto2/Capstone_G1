@@ -44,6 +44,20 @@ class FormularioRestablecerContrasena(FormularioBootstrap, SetPasswordForm):
     """El administrador asigna una contraseña nueva (no hay recuperación por correo)."""
 
 
+class FormularioFotoPerfil(Formulario):
+    """CU-A2: el titular cambia su propia foto de perfil (RF-01)."""
+
+    foto = forms.ImageField(
+        label="Elija una imagen",
+        help_text="JPEG, PNG o WebP · hasta 10 MB. Se recorta y redimensiona automáticamente.",
+        error_messages={
+            "invalid_image": "El archivo no es una imagen válida. Use JPEG, PNG o WebP.",
+            "required": "Seleccione una imagen.",
+        },
+        widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+    )
+
+
 class FormularioUsuario(FormularioModelo):
     contrasena1 = forms.CharField(label="Contraseña inicial", strip=False, widget=forms.PasswordInput,
                                   help_text=password_validation.password_validators_help_text_html())

@@ -102,6 +102,8 @@ class Usuario(AbstractBaseUser):
     correo = models.EmailField(max_length=120, unique=True)
     password = models.CharField("contraseña", max_length=255, db_column="hash_contrasena")
     telefono = models.CharField("teléfono", max_length=15, null=True, blank=True)
+    foto_perfil = models.CharField("foto de perfil", max_length=300, null=True, blank=True,
+                                   db_column="foto_perfil")
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField("último acceso", null=True, blank=True, db_column="ultimo_acceso")
@@ -136,6 +138,15 @@ class Usuario(AbstractBaseUser):
     @property
     def iniciales(self):
         return f"{self.nombre[:1]}{self.apellidos[:1]}".upper()
+
+    @property
+    def tiene_foto(self):
+        return bool(self.foto_perfil)
+
+    @property
+    def foto_version(self):
+        """Token breve para refrescar la caché del navegador al cambiar la foto."""
+        return (self.foto_perfil or "")[-20:]
 
     @property
     def es_sistema(self):

@@ -126,6 +126,8 @@ a { text-underline-offset: .15em; }
 .btn-icono-oscuro:hover { background: var(--b-negro-3); color: #fff; }
 .btn-icono-oscuro .contador { position: absolute; top: 5px; right: 2px; margin: 0; font-size: .68rem; min-width: 1.25rem; }
 .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--b-azul); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-family: var(--f-titulo); font-weight: 600; font-size: .9rem; letter-spacing: .04em; }
+.avatar-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: var(--b-azul); display: inline-block; vertical-align: middle; }
+.avatar-enlace { display: inline-flex; align-self: center; margin-bottom: .5rem; text-decoration: none; }
 
 .nav-inferior {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030; background: var(--b-negro); border-top: 1px solid #000;
