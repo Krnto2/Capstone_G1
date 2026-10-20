@@ -107,4 +107,60 @@
       if (evento.target.matches("select, input[type=date]")) buscar();
     });
   });
+
+  // Formateo del RUT en vivo (RF-01): no hace falta escribir puntos ni guion, se agregan solos.
+  function rutLimpio(valor) { return valor.replace(/[^0-9kK]/g, "").toUpperCase(); }
+  function rutFormateado(limpio) {
+    if (limpio.length < 2) return limpio;
+    var cuerpo = limpio.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return cuerpo + "-" + limpio.slice(-1);
+  }
+  document.querySelectorAll("input[data-rut]").forEach(function (campo) {
+    campo.addEventListener("input", function () {
+      var utilesAntes = rutLimpio(campo.value.slice(0, campo.selectionStart)).length;
+      campo.value = rutFormateado(rutLimpio(campo.value));
+      var i = 0, utiles = 0;
+      while (i < campo.value.length && utiles < utilesAntes) {
+        if (/[0-9kK]/.test(campo.value[i])) utiles++;
+        i++;
+      }
+      try { campo.setSelectionRange(i, i); } catch (e) { /* algunos navegadores no lo permiten */ }
+    });
+  });
+
+  // Cierre automático por inactividad (RNF-02). El servidor ya caduca la sesión; esto la cierra
+  // en el navegador apenas se cumple el tiempo, sin esperar a que el usuario haga clic.
+  (function () {
+    var cuerpo = document.body;
+    var minutos = parseInt(cuerpo.getAttribute("data-sesion-minutos"), 10);
+    var urlSalir = cuerpo.getAttribute("data-url-logout");
+    if (!minutos || !urlSalir) return;  // no hay sesión iniciada
+    var limite = minutos * 60 * 1000, temporizador;
+
+    function salir() {
+      var form = document.createElement("form");
+      form.method = "post";
+      form.action = urlSalir;
+      var token = (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1] || "";
+      var campo = document.createElement("input");
+      campo.type = "hidden";
+      campo.name = "csrfmiddlewaretoken";
+      campo.value = decodeURIComponent(token);
+      form.appendChild(campo);
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function reiniciar() { clearTimeout(temporizador); temporizador = setTimeout(salir, limite); }
+
+    var ultimo = 0;
+    function alHaberActividad() {
+      var ahora = Date.now();
+      if (ahora - ultimo > 1000) { ultimo = ahora; reiniciar(); }  // como máximo una vez por segundo
+    }
+    ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"].forEach(function (evento) {
+      document.addEventListener(evento, alHaberActividad, { passive: true });
+    });
+    reiniciar();
+  })();
 })();

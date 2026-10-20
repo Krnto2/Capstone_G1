@@ -40,7 +40,7 @@
 </div>
 <div class="tarjeta">
   <div class="tarjeta-titulo">Seguridad</div>
-  <p class="text-body-secondary">La sesión se cierra tras 30 minutos sin actividad.</p>
+  <p class="text-body-secondary">La sesión se cierra automáticamente tras {{ SIREMA_SESION_MINUTOS }} minutos sin actividad, y solo puede estar activa en un dispositivo a la vez.</p>
   <a class="btn btn-negro btn-touch" href="{% url 'accesos:cambiar_contrasena' %}"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a>
 </div>
 <div class="tarjeta d-lg-none">

@@ -1,10 +1,12 @@
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.sessions.models import Session
+from django.utils import timezone
 
 from nucleo.enums import AccionAuditoria
 from nucleo.formularios import CampoFecha, Formulario, FormularioBootstrap, FormularioModelo
-from nucleo.utilidades import formatear_rut, ip_cliente, rut_valido
+from nucleo.utilidades import digito_verificador, formatear_rut, ip_cliente, limpiar_rut, rut_valido
 
 from . import auditoria
 from .models import Rol, Usuario
@@ -25,15 +27,24 @@ class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
                          "se bloquea por 15 minutos.",
         "inactive": "Su cuenta está deshabilitada. Comuníquese con el administrador de la compañía "
                     "para reactivarla.",
+        "sesion_activa": "Ya hay una sesión activa con este usuario en otro dispositivo. "
+                         "Cierre la sesión allí o espere a que caduque por inactividad.",
     }
 
     def confirm_login_allowed(self, user):
-        """Una cuenta deshabilitada no ingresa; el intento queda en la bitácora (RNF-09)."""
+        """Cuenta deshabilitada o con sesión en otro equipo no ingresa; queda en la bitácora (RNF-02, RNF-09)."""
         if not user.is_active:
             auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
                                 nuevos={"evento": "intento_cuenta_deshabilitada"}, usuario=user,
                                 ip=ip_cliente(self.request))
         super().confirm_login_allowed(user)
+        # RNF-02: una sola sesión activa por usuario. Si la sesión guardada sigue vigente, se bloquea.
+        clave = user.sesion_activa
+        if clave and Session.objects.filter(session_key=clave, expire_date__gt=timezone.now()).exists():
+            auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
+                                nuevos={"evento": "intento_sesion_duplicada"}, usuario=user,
+                                ip=ip_cliente(self.request))
+            raise forms.ValidationError(self.error_messages["sesion_activa"], code="sesion_activa")
 
 
 class FormularioCambioContrasena(FormularioBootstrap, PasswordChangeForm):
@@ -67,7 +78,8 @@ class FormularioUsuario(FormularioModelo):
         model = Usuario
         fields = ["rut", "nombre", "apellidos", "correo", "telefono", "rol"]
         widgets = {
-            "rut": forms.TextInput(attrs={"placeholder": "12.345.678-9", "autocomplete": "off"}),
+            "rut": forms.TextInput(attrs={"placeholder": "12.345.678-5", "autocomplete": "off",
+                                          "data-rut": "1", "inputmode": "text"}),
             "telefono": forms.TextInput(attrs={"placeholder": "+56 9 1234 5678", "inputmode": "tel"}),
             "correo": forms.EmailInput(attrs={"inputmode": "email"}),
         }
@@ -78,6 +90,8 @@ class FormularioUsuario(FormularioModelo):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["rut"].help_text = ("Puede escribirlo con o sin puntos y guion; se formatea solo. "
+                                        "El dígito verificador debe ser correcto.")
         self.fields["rol"].queryset = Rol.objects.filter(activo=True)
         self.fields["rol"].empty_label = None
         if self.instance.pk:
@@ -85,10 +99,14 @@ class FormularioUsuario(FormularioModelo):
             del self.fields["contrasena2"]
 
     def clean_rut(self):
-        rut = self.cleaned_data["rut"]
-        if not rut_valido(rut):
-            raise forms.ValidationError("El RUT no es válido. Revise el dígito verificador.")
-        return formatear_rut(rut)
+        limpio = limpiar_rut(self.cleaned_data["rut"])
+        if len(limpio) < 2 or not limpio[:-1].isdigit():
+            raise forms.ValidationError("Escriba el RUT completo, por ejemplo 12.345.678-5 o 123456785.")
+        if not rut_valido(limpio):
+            correcto = digito_verificador(limpio[:-1])
+            raise forms.ValidationError(
+                f"El dígito verificador no corresponde: para {limpio[:-1]} debería terminar en «{correcto}».")
+        return formatear_rut(limpio)
 
     def clean_correo(self):
         correo = self.cleaned_data["correo"].strip().lower()

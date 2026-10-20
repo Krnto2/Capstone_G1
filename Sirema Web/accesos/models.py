@@ -107,6 +107,9 @@ class Usuario(AbstractBaseUser):
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField("último acceso", null=True, blank=True, db_column="ultimo_acceso")
+    # Clave de la única sesión activa permitida (RNF-02): bloquea el ingreso en un segundo dispositivo.
+    sesion_activa = models.CharField("sesión activa", max_length=40, null=True, blank=True,
+                                     db_column="sesion_activa")
 
     objects = UsuarioManager()
 

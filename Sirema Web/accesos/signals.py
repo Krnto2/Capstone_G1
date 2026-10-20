@@ -11,6 +11,10 @@ from .models import Usuario
 
 @receiver(user_logged_in)
 def inicio_sesion(sender, request, user, **kwargs):
+    # RNF-02: registra la sesión como la única activa de este usuario.
+    if request.session.session_key is None:
+        request.session.save()
+    Usuario.objects.filter(pk=user.pk).update(sesion_activa=request.session.session_key)
     auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
                         nuevos={"evento": "inicio_sesion"}, usuario=user, ip=ip_cliente(request))
 
@@ -18,6 +22,7 @@ def inicio_sesion(sender, request, user, **kwargs):
 @receiver(user_logged_out)
 def cierre_sesion(sender, request, user, **kwargs):
     if user is not None and user.is_authenticated:
+        Usuario.objects.filter(pk=user.pk).update(sesion_activa=None)
         auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
                             nuevos={"evento": "cierre_sesion"}, usuario=user, ip=ip_cliente(request))
 

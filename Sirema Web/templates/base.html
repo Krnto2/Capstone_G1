@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="{% estatico 'css/sirema.css' %}">
   {% block estilos %}{% endblock %}
 </head>
-<body>
+<body{% if user.is_authenticated %} data-sesion-minutos="{{ SIREMA_SESION_MINUTOS }}" data-url-logout="{% url 'accesos:logout' %}"{% endif %}>
 <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
 {% block cuerpo %}
 <div class="app">

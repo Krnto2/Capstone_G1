@@ -136,8 +136,8 @@ LOGIN_URL = "accesos:login"
 LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "accesos:login"
 
-# Cierre de sesión a los 30 minutos sin actividad (RNF-02).
-SESSION_COOKIE_AGE = 30 * 60
+# Cierre de sesión a los 15 minutos sin actividad (RNF-02).
+SESSION_COOKIE_AGE = 15 * 60
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
