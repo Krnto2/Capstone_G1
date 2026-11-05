@@ -24,10 +24,9 @@ El aporte de valor es que la jefatura pueda conocer el estado real de cada equip
 
 | Usuario | Qué hace en el sistema |
 |---|---|
-| Bombero | Ejecuta las revisiones asignadas y registra sus resultados desde el celular, junto al carro. |
-| Encargado de material | Administra el inventario, define los planes de revisión y asigna responsables. |
-| Jefatura | Consulta el panel de cumplimiento, el historial por equipo y los reportes exportables. |
-| Administrador | Gestiona usuarios, roles y respaldos del sistema. |
+| Bombero | Ejecuta las revisiones asignadas desde el celular, junto al carro, consulta el inventario y registra traslados. |
+| Jefatura | Administra el material, define y asigna los planes de revisión, da seguimiento a los hallazgos y consulta el panel y los reportes. |
+| Administrador | Gestiona usuarios, permisos por rol y catálogos, y consulta la bitácora de auditoría. |
 
 ---
 
@@ -63,10 +62,10 @@ La aplicación se organiza en cuatro módulos de dominio construidos sobre un mo
 
 | Módulo | Responsabilidad |
 |---|---|
-| Accesos | Usuarios, roles, autenticación y control de permisos. |
+| Accesos | Usuarios, roles, autenticación, control de permisos y bitácora de auditoría. |
 | Inventario | Material menor, código institucional único, ubicaciones y movimientos. |
-| Revisiones | Planes de revisión, asignación de responsables y ejecución con registro de resultados. |
-| Reportes | Panel de cumplimiento, notificaciones, exportaciones y bitácora de auditoría. |
+| Revisiones | Planes de revisión, asignación de responsables, ejecución con registro de resultados, fotografías, hallazgos y notificaciones. |
+| Reportes | Panel de cumplimiento y exportación de reportes. |
 
 Cada revisión queda enlazada a un equipo registrado en el inventario y a un responsable, lo que sostiene la trazabilidad completa del material.
 
@@ -74,26 +73,12 @@ Cada revisión queda enlazada a un equipo registrado en el inventario y a un res
 
 ## Ejecución del proyecto
 
-El sistema se levanta mediante contenedores, por lo que la instalación no requiere configurar manualmente el entorno en el equipo servidor.
+La aplicación está en la carpeta `Sirema Web`. Su [README](Sirema%20Web/README.md) explica las dos formas de ejecutarla:
 
-**Requisitos previos**
+- **Computador de desarrollo:** con Python 3.12 y SQLite, sin Docker.
+- **Servidor del cuartel:** con Docker Compose, en cuatro contenedores (proxy, web, programador y base de datos), incluyendo el procedimiento de respaldo y restauración.
 
-- Docker instalado en el equipo servidor.
-- Acceso a la red local del cuartel.
-- Archivo de variables de entorno con las credenciales de la base de datos.
-
-**Puesta en marcha**
-
-1. Clonar el repositorio en el equipo servidor.
-2. Crear el archivo de variables de entorno a partir del archivo de ejemplo incluido y completar las credenciales.
-3. Construir y levantar los contenedores.
-4. Aplicar las migraciones de la base de datos.
-5. Crear el usuario administrador inicial.
-6. Cargar el inventario del material menor.
-
-Una vez levantado, el sistema queda disponible para todos los dispositivos conectados a la red del cuartel a través de la dirección del servidor.
-
-El detalle técnico de cada paso, junto con el procedimiento de respaldo y restauración, se documenta en el manual técnico de despliegue incluido en la carpeta de documentación.
+Una vez instalado, el sistema queda disponible para todos los dispositivos conectados a la red del cuartel a través de la dirección del servidor.
 
 ---
 
@@ -140,26 +125,26 @@ Hitos de entrega: definición del proyecto en la semana 4, informe de avance en 
 
 ## Estructura del repositorio
 
-- **Fase 1**: documentación de la definición del proyecto y evidencias individuales.
-- **Fase 2**: documentación de requerimientos, diseño, pruebas y manual técnico.
-- **src**: código fuente de la aplicación, organizado por módulos de dominio.
-- **docs**: diagramas, modelo de datos y material de apoyo.
+- **Documentacion**: especificación de requerimientos (ERS), documento de arquitectura (DAS), casos de uso y modelo de datos.
+- **Fase 1**: evidencias grupales e individuales de la definición del proyecto.
+- **Fase 2**: evidencias grupales e individuales del desarrollo del proyecto.
+- **Sirema Web**: código fuente de la aplicación, organizado por módulos de dominio, con sus pruebas y archivos de despliegue.
+- **.github/workflows**: ejecución automática de las pruebas.
 
 ---
 
 ## Tecnologías utilizadas
 
-- **Python**
-- **Bootstrap**
-- **HTML**
-- **PostgreSQL**
-- **Docker**
+- **Python 3.12** y **Django 5.2**
+- **PostgreSQL 16**
+- **HTML** y **Bootstrap 5**
+- **Docker Compose** y **Nginx**
 
 ---
 
 ## Estado del proyecto
 
-En desarrollo. Fase 1 completada.
+Versión 0.9.0, candidata para pruebas de aceptación. La aplicación implementa los módulos de accesos, inventario, revisiones y reportes.
 
 ---
 

@@ -4,7 +4,7 @@ Sistema web para el control de mantenciones y revisiones periódicas del materia
 **Octava Compañía del Cuerpo de Bomberos de Talcahuano**.
 Proyecto APT Capstone · Duoc UC, Sede San Andrés · APT122 sección 004D · Grupo 1.
 
-Implementa la ERS v1.0 (RF-01 a RF-12, RNF-01 a RNF-11) y la arquitectura del DAS v1.0: monolito
+Implementa la ERS v1.1 (RF-01 a RF-12, RNF-01 a RNF-11) y la arquitectura del DAS v1.0: monolito
 modular en capas con **Django 5.2**, **PostgreSQL 16**, **Bootstrap 5** servido localmente y
 **Docker Compose** con cuatro contenedores. Funciona en la red del cuartel sin internet.
 

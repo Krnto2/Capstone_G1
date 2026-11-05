@@ -2,6 +2,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import connection, transaction
+from django.test import Client
 from django.urls import reverse
 
 from accesos import auditoria
@@ -182,3 +183,30 @@ class TestCuentaDeshabilitada:
         bombero.desactivar()
         respuesta = client.get(reverse("revisiones:mis_revisiones"))
         assert respuesta.status_code == 302 and reverse("accesos:login") in respuesta.url
+
+
+class TestSesionUnica:
+    def _ingresar(self, cliente, usuario):
+        return cliente.post(reverse("accesos:login"), {"username": usuario.correo, "password": CLAVE})
+
+    def test_un_ingreso_nuevo_cierra_la_sesion_anterior(self, client, bombero):
+        otro_dispositivo = Client()
+        self._ingresar(client, bombero)
+        assert self._ingresar(otro_dispositivo, bombero).status_code == 302
+        assert otro_dispositivo.get(reverse("revisiones:mis_revisiones")).status_code == 200
+        respuesta = client.get(reverse("revisiones:mis_revisiones"))
+        assert respuesta.status_code == 302 and reverse("accesos:login") in respuesta.url
+        assert EventoAuditoria.objects.filter(usuario=bombero, datos_nuevos__reemplaza_sesion_anterior=True).exists()
+
+    def test_cerrar_el_navegador_sin_salir_no_bloquea_el_reingreso(self, client, bombero):
+        self._ingresar(client, bombero)
+        client.cookies.clear()
+        assert self._ingresar(client, bombero).status_code == 302
+
+
+class TestRedireccionInterna:
+    def test_ignora_destinos_enviados_por_el_cliente(self, client, administrador, bombero):
+        client.force_login(administrador)
+        respuesta = client.post(reverse("accesos:usuario_estado", args=[bombero.pk]),
+                                {"siguiente": "https://ejemplo.com/"})
+        assert respuesta.url == reverse("accesos:usuarios")

@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
-from django.contrib.sessions.models import Session
-from django.utils import timezone
 
 from nucleo.enums import AccionAuditoria
 from nucleo.formularios import CampoFecha, Formulario, FormularioBootstrap, FormularioModelo
@@ -27,24 +25,15 @@ class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
                          "se bloquea por 15 minutos.",
         "inactive": "Su cuenta está deshabilitada. Comuníquese con el administrador de la compañía "
                     "para reactivarla.",
-        "sesion_activa": "Ya hay una sesión activa con este usuario en otro dispositivo. "
-                         "Cierre la sesión allí o espere a que caduque por inactividad.",
     }
 
     def confirm_login_allowed(self, user):
-        """Cuenta deshabilitada o con sesión en otro equipo no ingresa; queda en la bitácora (RNF-02, RNF-09)."""
+        """Una cuenta deshabilitada no ingresa y el intento queda en la bitácora (RNF-09)."""
         if not user.is_active:
             auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
                                 nuevos={"evento": "intento_cuenta_deshabilitada"}, usuario=user,
                                 ip=ip_cliente(self.request))
         super().confirm_login_allowed(user)
-        # RNF-02: una sola sesión activa por usuario. Si la sesión guardada sigue vigente, se bloquea.
-        clave = user.sesion_activa
-        if clave and Session.objects.filter(session_key=clave, expire_date__gt=timezone.now()).exists():
-            auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
-                                nuevos={"evento": "intento_sesion_duplicada"}, usuario=user,
-                                ip=ip_cliente(self.request))
-            raise forms.ValidationError(self.error_messages["sesion_activa"], code="sesion_activa")
 
 
 class FormularioCambioContrasena(FormularioBootstrap, PasswordChangeForm):

@@ -3,7 +3,8 @@
 SIREMA se usa desde el navegador del celular o del computador, conectado a la red del cuartel.
 Ingrese con su **correo** y **contraseña**. Si la olvida, el administrador le asigna una nueva
 (no hay recuperación por correo). Tras 5 intentos fallidos la cuenta se bloquea 15 minutos, y la
-sesión se cierra sola tras 30 minutos sin actividad.
+sesión se cierra sola tras 15 minutos sin actividad. La sesión solo puede estar abierta en un dispositivo:
+si ingresa desde otro, la anterior se cierra.
 
 ## Bombero
 

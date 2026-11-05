@@ -6,7 +6,6 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Count, Q
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
@@ -427,7 +426,7 @@ class AsignacionCerrarView(PermisoRequeridoMixin, View):
             messages.error(request, error.messages[0])
         else:
             messages.success(request, "La asignación fue cerrada. No se generarán nuevas revisiones.")
-        return redirect(request.POST.get("siguiente") or "revisiones:asignaciones")
+        return redirect("revisiones:asignaciones")
 
 
 # ------------------------------------------------------------- Hallazgos ----
@@ -489,7 +488,7 @@ class HallazgoDetalleView(View):
             if form.is_valid():
                 services.cerrar_hallazgo(hallazgo, form.cleaned_data["acciones"], request.user)
                 messages.success(request, "Hallazgo cerrado.")
-                return redirect(request.POST.get("siguiente") or reverse("revisiones:hallazgo", args=[pk]))
+                return redirect("revisiones:hallazgo", pk=pk)
         except ValidationError as error:
             form.add_error(None, error.messages[0])
         return render(request, self.template_name, {"hallazgo": hallazgo, "form": form})

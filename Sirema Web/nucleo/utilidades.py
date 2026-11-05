@@ -93,9 +93,10 @@ def a_decimal(valor):
 def ip_cliente(request):
     if request is None:
         return None
+    # Nginx agrega la IP real al final de la lista; lo anterior lo envía el cliente y se puede falsificar.
     reenviada = request.META.get("HTTP_X_FORWARDED_FOR")
     if reenviada:
-        return reenviada.split(",")[0].strip()
+        return reenviada.split(",")[-1].strip()
     return request.META.get("REMOTE_ADDR")
 
 

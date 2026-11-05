@@ -230,7 +230,7 @@ class UsuarioEstadoView(PermisoRequeridoMixin, View):
             messages.success(request, f"La cuenta de {usuario.nombre_completo} fue {texto}.")
         except ValidationError as error:
             messages.error(request, error.messages[0])
-        return redirect(request.POST.get("siguiente") or "accesos:usuarios")
+        return redirect("accesos:usuarios")
 
 
 class UsuarioContrasenaView(PermisoRequeridoMixin, FormView):

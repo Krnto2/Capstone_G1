@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from nucleo.almacenamiento import ErrorAlmacenamiento, ServicioAlmacenamiento
-from nucleo.utilidades import a_decimal, formatear_rut, normalizar_codigo, rut_valido, sumar_periodo
+from nucleo.utilidades import a_decimal, formatear_rut, ip_cliente, normalizar_codigo, rut_valido, sumar_periodo
 
 
 class TestUtilidades:
@@ -27,6 +27,10 @@ class TestUtilidades:
         assert a_decimal("20,9") == Decimal("20.9")
         assert a_decimal("1.234,5") == Decimal("1234.5")
         assert a_decimal("abc") is None
+
+    def test_ip_cliente_usa_la_que_agrega_nginx(self, rf):
+        assert ip_cliente(rf.get("/", HTTP_X_FORWARDED_FOR="1.2.3.4, 192.168.1.20")) == "192.168.1.20"
+        assert ip_cliente(rf.get("/", REMOTE_ADDR="192.168.1.30")) == "192.168.1.30"
 
 
 class TestAlmacenamiento:
