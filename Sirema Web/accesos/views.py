@@ -1,27 +1,26 @@
 from datetime import datetime, time
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Q, Value
 from django.db.models.functions import Replace, Upper
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, FormView, ListView, TemplateView, UpdateView
 
-from nucleo.almacenamiento import ErrorAlmacenamiento, ServicioAlmacenamiento
+from nucleo.almacenamiento import ErrorAlmacenamiento, foto_de_perfil
 from nucleo.enums import AccionAuditoria
 from nucleo.utilidades import limpiar_rut
 
 from . import auditoria, demo
 from .forms import (FiltroBitacora, FiltroUsuarios, FormularioCambioContrasena, FormularioFotoPerfil,
-                    FormularioIngreso, FormularioRestablecerContrasena, FormularioUsuario)
-from .models import EventoAuditoria, Permiso, Rol, RolPermiso, Usuario
+                    FormularioIngreso, FormularioPerfil, FormularioRestablecerContrasena, FormularioUsuario)
+from .models import EventoAuditoria, FotoPerfil, Permiso, Rol, RolPermiso, Usuario
 from .permisos import PermisoRequeridoMixin
 
 # Permisos que el rol administrador conserva siempre, para no perder el acceso.
@@ -52,6 +51,34 @@ class PerfilView(TemplateView):
         return super().get_context_data(form_foto=FormularioFotoPerfil(), **kwargs)
 
 
+class PerfilEditarView(View):
+    """El titular actualiza sus datos. El RUT y el rol los cambia el administrador."""
+
+    template_name = "accesos/perfil_form.html"
+
+    def get(self, request):
+        return render(request, self.template_name, {"form": FormularioPerfil(instance=self._usuario(request))})
+
+    def post(self, request):
+        usuario = self._usuario(request)
+        anteriores = auditoria.instantanea(usuario)
+        form = FormularioPerfil(request.POST, instance=usuario)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form})
+        with transaction.atomic():
+            form.save()
+            antes, despues = auditoria.diferencias(anteriores, auditoria.instantanea(usuario))
+            if despues:
+                auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", usuario.pk, antes, despues)
+        messages.success(request, "Datos actualizados.")
+        return redirect("accesos:perfil")
+
+    @staticmethod
+    def _usuario(request):
+        # Copia aparte: un formulario con errores no debe alterar al usuario de la sesión.
+        return Usuario.objects.get(pk=request.user.pk)
+
+
 class CambiarContrasenaView(auth_views.PasswordChangeView):
     """CU-A2 Cambiar contraseña propia."""
 
@@ -63,29 +90,19 @@ class CambiarContrasenaView(auth_views.PasswordChangeView):
         respuesta = super().form_valid(form)
         auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", self.request.user.pk,
                             nuevos={"contrasena": "cambiada por el titular"})
-        messages.success(self.request, "Su contraseña fue actualizada.")
+        messages.success(self.request, "Contraseña actualizada.")
         return respuesta
 
 
 class FotoPerfilView(View):
-    """Entrega protegida del avatar: solo el titular o quien administra usuarios."""
+    """La foto la ve el titular o quien administra usuarios."""
 
     def get(self, request, pk):
-        usuario = get_object_or_404(Usuario, pk=pk)
-        if not usuario.foto_perfil:
-            raise Http404("Sin foto de perfil.")
-        if request.user.pk != usuario.pk and not request.user.tiene_permiso("usuario.administrar"):
+        if request.user.pk != pk and not request.user.tiene_permiso("usuario.administrar"):
             raise PermissionDenied
-        if settings.SIREMA_USAR_X_ACCEL:
-            respuesta = HttpResponse(content_type="image/jpeg")
-            respuesta["X-Accel-Redirect"] = settings.SIREMA_X_ACCEL_PREFIJO + usuario.foto_perfil
-        else:
-            try:
-                ruta = ServicioAlmacenamiento().ruta_absoluta(usuario.foto_perfil)
-                respuesta = FileResponse(open(ruta, "rb"), content_type="image/jpeg")
-            except (OSError, ErrorAlmacenamiento) as error:
-                raise Http404("Archivo no disponible.") from error
-        respuesta["Cache-Control"] = "private, max-age=3600"
+        foto = get_object_or_404(FotoPerfil, pk=pk)
+        respuesta = HttpResponse(bytes(foto.imagen), content_type="image/jpeg")
+        respuesta["Cache-Control"] = "private, max-age=86400"
         return respuesta
 
 
@@ -98,23 +115,16 @@ class FotoPerfilSubirView(View):
             for error in form.errors.get("foto", ["No se pudo procesar la imagen."]):
                 messages.error(request, error)
             return redirect("accesos:perfil")
-        usuario = request.user
-        anterior = usuario.foto_perfil
-        almacen = ServicioAlmacenamiento()
-        archivo = form.cleaned_data["foto"]
         try:
-            archivo.seek(0)
-            guardado = almacen.guardar(archivo, subcarpeta="perfiles")
+            imagen = foto_de_perfil(form.cleaned_data["foto"])
         except ErrorAlmacenamiento as error:
             messages.error(request, str(error))
             return redirect("accesos:perfil")
-        usuario.foto_perfil = guardado.ruta
-        usuario.save(update_fields=["foto_perfil"])
-        if anterior and anterior != guardado.ruta:
-            almacen.eliminar(anterior)
-        auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", usuario.pk,
-                            nuevos={"foto_perfil": "actualizada por el titular"})
-        messages.success(request, "Su foto de perfil fue actualizada.")
+        with transaction.atomic():
+            request.user.cambiar_foto(imagen)
+            auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", request.user.pk,
+                                nuevos={"foto_perfil": "actualizada por el titular"})
+        messages.success(request, "Foto actualizada.")
         return redirect("accesos:perfil")
 
 
@@ -122,14 +132,12 @@ class FotoPerfilEliminarView(View):
     """El titular quita su foto y vuelve a las iniciales."""
 
     def post(self, request):
-        usuario = request.user
-        if usuario.foto_perfil:
-            ServicioAlmacenamiento().eliminar(usuario.foto_perfil)
-            usuario.foto_perfil = None
-            usuario.save(update_fields=["foto_perfil"])
-            auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", usuario.pk,
-                                nuevos={"foto_perfil": "eliminada por el titular"})
-            messages.success(request, "Su foto de perfil fue eliminada.")
+        if request.user.tiene_foto:
+            with transaction.atomic():
+                request.user.quitar_foto()
+                auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", request.user.pk,
+                                    nuevos={"foto_perfil": "eliminada por el titular"})
+            messages.success(request, "Foto eliminada.")
         return redirect("accesos:perfil")
 
 
@@ -205,7 +213,7 @@ class UsuarioEditarView(PermisoRequeridoMixin, UpdateView):
         antes, despues = auditoria.diferencias(anteriores, auditoria.instantanea(self.object))
         if despues:
             auditoria.registrar(AccionAuditoria.MODIFICACION, "usuario", self.object.pk, antes, despues)
-        messages.success(self.request, "Los datos del usuario fueron actualizados.")
+        messages.success(self.request, "Usuario actualizado.")
         return respuesta
 
 
@@ -306,9 +314,9 @@ class PermisosRolView(PermisoRequeridoMixin, View):
             )
             cambios += 1
         if cambios:
-            messages.success(request, "Los permisos fueron actualizados.")
+            messages.success(request, "Permisos actualizados.")
         else:
-            messages.info(request, "No hubo cambios en los permisos.")
+            messages.info(request, "Sin cambios.")
         return redirect("accesos:permisos")
 
 

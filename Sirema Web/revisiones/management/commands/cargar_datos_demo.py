@@ -106,7 +106,7 @@ PLANES = {
 }
 
 ASIGNACIONES = [
-    # código, plan, correo responsable, semanas atrás de inicio
+    # código, plan, correos responsables separados por coma, semanas atrás de inicio
     ("8C-0112", "Motobomba", "j.soto@sirema.local", 8),
     ("8C-0457", "Detector de gases", "j.soto@sirema.local", 12),
     ("8C-0233", "Motosierra", "j.soto@sirema.local", 8),
@@ -114,7 +114,7 @@ ASIGNACIONES = [
     ("8C-0101", "Motobomba", "m.rivas@sirema.local", 8),
     ("8C-0305", "Herramienta hidráulica", "p.lagos@sirema.local", 12),
     ("8C-0458", "Detector de gases", "m.rivas@sirema.local", 12),
-    ("8C-0120", "Motobomba", "p.lagos@sirema.local", 6),
+    ("8C-0120", "Motobomba", "p.lagos@sirema.local,j.soto@sirema.local", 6),
     ("8C-0612", "Herramienta hidráulica", "p.lagos@sirema.local", 12),
 ]
 
@@ -255,10 +255,12 @@ class Command(BaseCommand):
         hoy_ = hoy()
         zona = timezone.get_current_timezone()
         asignaciones = []
-        for codigo, plan, correo, semanas in ASIGNACIONES:
-            asignaciones.append(AsignacionPlan.objects.create(
+        for codigo, plan, correos, semanas in ASIGNACIONES:
+            asignacion = AsignacionPlan.objects.create(
                 plan=planes[plan], material=Material.objects.get(codigo_institucional=codigo),
-                usuario_responsable=usuarios[correo], fecha_inicio=hoy_ - timedelta(weeks=semanas)))
+                fecha_inicio=hoy_ - timedelta(weeks=semanas))
+            asignacion.responsables.set(usuarios[correo] for correo in correos.split(","))
+            asignaciones.append(asignacion)
         programador = ProgramadorRevisiones(fecha=hoy_)
         for asignacion in asignaciones:
             programador.generar_para(asignacion)
@@ -277,7 +279,7 @@ class Command(BaseCommand):
                 dia = min(revision.fecha_programada + timedelta(days=demora), hoy_ - timedelta(days=1))
                 cuando = datetime.combine(dia, time(random.randint(9, 19), random.randint(0, 59)), zona)
                 tipo = "observacion" if random.random() < 0.12 else "conforme"
-                self._ejecutar(revision, revision.usuario_responsable, cuando, tipo)
+                self._ejecutar(revision, revision.responsables.first(), cuando, tipo)
 
         # Hallazgos coherentes con el prototipo (D1 y M4).
         casos = [("8C-0457", "Sensor de CO marca 8 ppm en aire limpio y no vuelve a cero. Se retira el equipo de la "
@@ -295,7 +297,7 @@ class Command(BaseCommand):
                 revision.fotografias.all().delete()
                 revision.resultados.all().delete()
             cuando = datetime.combine(min(revision.fecha_limite, hoy_ - timedelta(days=1)), time(10, 30), zona)
-            self._ejecutar(revision, revision.usuario_responsable, cuando, "falla")
+            self._ejecutar(revision, revision.responsables.first(), cuando, "falla")
             hallazgo = Hallazgo.objects.create(revision=revision, descripcion=descripcion, criticidad=criticidad,
                                                fecha_apertura=revision.fecha_hora_termino)
             if acciones:

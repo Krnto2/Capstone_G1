@@ -1,8 +1,7 @@
 {% extends "base.html" %}{% load sirema %}
 {% block titulo %}Bitácora de auditoría{% endblock %}
 {% block contenido %}
-<div class="encabezado"><div><div class="ceja">Administración</div><h1>Bitácora de auditoría</h1></div>
-  <span class="text-body-secondary small"><i class="bi bi-lock" aria-hidden="true"></i> Registro inalterable (RNF-09)</span></div>
+<div class="encabezado"><div><div class="ceja">Administración</div><h1>Bitácora de auditoría</h1></div></div>
 <form class="tarjeta mb-3" method="get" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-md-3">{% campo filtro.usuario clase="mb-0" %}</div>

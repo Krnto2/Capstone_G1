@@ -40,7 +40,7 @@ class ProveedorFichaMaterial:
         eventos = []
         revisiones = Revision.objects.filter(asignacion__material=material).exclude(
             estado__in=[EstadoRevision.PENDIENTE, EstadoRevision.EN_CURSO]).select_related(
-            "asignacion__plan", "usuario_ejecutor", "usuario_responsable")
+            "asignacion__plan", "usuario_ejecutor").prefetch_related("responsables")
         for r in revisiones:
             if r.estado == EstadoRevision.REALIZADA:
                 plazo = "" if r.en_plazo else " · fuera de plazo"
@@ -54,7 +54,7 @@ class ProveedorFichaMaterial:
                 eventos.append({"fecha": _fecha_hora(r.fecha_limite), "icono": "bi-clipboard-x",
                                 "titulo": f"Revisión {r.get_estado_display().lower()} · {r.asignacion.plan}",
                                 "detalle": f"Fecha límite {r.fecha_limite:%d-%m-%Y}",
-                                "usuario": r.usuario_responsable.nombre_corto, "tono": "falla",
+                                "usuario": r.responsables_cortos, "tono": "falla",
                                 "url": reverse("revisiones:detalle", args=[r.pk])})
         for h in Hallazgo.objects.filter(revision__asignacion__material=material).select_related("usuario_cierre"):
             eventos.append({"fecha": h.fecha_apertura, "icono": "bi-exclamation-octagon",
@@ -73,7 +73,7 @@ class ProveedorFichaMaterial:
             "plantilla": "revisiones/_ficha_material.html",
             "contexto": {
                 "asignaciones": AsignacionPlan.objects.filter(material=material, activa=True).select_related(
-                    "plan", "usuario_responsable"),
+                    "plan").prefetch_related("responsables"),
                 "abiertas": Revision.objects.completa().filter(asignacion__material=material).abiertas()
                 .por_urgencia(),
                 "hallazgos": Hallazgo.objects.filter(revision__asignacion__material=material)

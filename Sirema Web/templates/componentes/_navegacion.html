@@ -12,7 +12,7 @@
     <a class="nav-link {% nav_activo 'revisiones:planes,revisiones:plan,revisiones:plan_crear,revisiones:plan_editar' %}" href="{% url 'revisiones:planes' %}"><i class="bi bi-list-check" aria-hidden="true"></i>Planes de revisión</a>
   {% endif %}
   {% if 'asignacion.administrar' in permisos %}
-    <a class="nav-link {% nav_activo 'revisiones:asignaciones,revisiones:asignacion_crear' %}" href="{% url 'revisiones:asignaciones' %}"><i class="bi bi-link-45deg" aria-hidden="true"></i>Asignaciones</a>
+    <a class="nav-link {% nav_activo 'revisiones:asignaciones,revisiones:asignacion_crear,revisiones:asignacion_responsables' %}" href="{% url 'revisiones:asignaciones' %}"><i class="bi bi-link-45deg" aria-hidden="true"></i>Asignaciones</a>
   {% endif %}
   {% if 'material.consultar' in permisos %}
     <a class="nav-link {% nav_activo 'inventario:lista,inventario:detalle,inventario:crear,inventario:editar,inventario:baja,inventario:trasladar,inventario:importar' %}" href="{% url 'inventario:lista' %}"><i class="bi bi-box-seam" aria-hidden="true"></i>Inventario</a>

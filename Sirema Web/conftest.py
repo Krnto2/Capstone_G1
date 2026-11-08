@@ -85,14 +85,17 @@ def plan(db):
 
 @pytest.fixture
 def asignacion(plan, material, bombero):
-    return AsignacionPlan.objects.create(plan=plan, material=material, usuario_responsable=bombero,
-                                         fecha_inicio=hoy())
+    asignacion = AsignacionPlan.objects.create(plan=plan, material=material, fecha_inicio=hoy())
+    asignacion.responsables.add(bombero)
+    return asignacion
 
 
 @pytest.fixture
 def revision(asignacion, bombero):
-    return Revision.objects.create(asignacion=asignacion, usuario_responsable=bombero, fecha_programada=hoy(),
-                                   fecha_limite=hoy() + timedelta(days=1))
+    revision = Revision.objects.create(asignacion=asignacion, fecha_programada=hoy(),
+                                       fecha_limite=hoy() + timedelta(days=1))
+    revision.responsables.add(bombero)
+    return revision
 
 
 def imagen_prueba(color=(40, 80, 120), tamano=(400, 300), formato="JPEG", nombre="foto.jpg"):

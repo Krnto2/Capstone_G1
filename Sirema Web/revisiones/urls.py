@@ -20,6 +20,8 @@ urlpatterns = [
     path("planes/<int:pk>/desactivar/", views.PlanDesactivarView.as_view(), name="plan_desactivar"),
     path("asignaciones/", views.AsignacionListaView.as_view(), name="asignaciones"),
     path("asignaciones/nueva/", views.AsignacionCrearView.as_view(), name="asignacion_crear"),
+    path("asignaciones/<int:pk>/responsables/", views.AsignacionResponsablesView.as_view(),
+         name="asignacion_responsables"),
     path("asignaciones/<int:pk>/cerrar/", views.AsignacionCerrarView.as_view(), name="asignacion_cerrar"),
     path("hallazgos/", views.HallazgoListaView.as_view(), name="hallazgos"),
     path("hallazgos/<int:pk>/", views.HallazgoDetalleView.as_view(), name="hallazgo"),

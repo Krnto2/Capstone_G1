@@ -128,39 +128,56 @@
     });
   });
 
-  // Cierre automático por inactividad (RNF-02). El servidor ya caduca la sesión; esto la cierra
-  // en el navegador apenas se cumple el tiempo, sin esperar a que el usuario haga clic.
-  (function () {
-    var cuerpo = document.body;
-    var minutos = parseInt(cuerpo.getAttribute("data-sesion-minutos"), 10);
-    var urlSalir = cuerpo.getAttribute("data-url-logout");
-    if (!minutos || !urlSalir) return;  // no hay sesión iniciada
-    var limite = minutos * 60 * 1000, temporizador;
+  // La foto de perfil se guarda apenas se elige.
+  document.querySelectorAll("[data-enviar-al-elegir]").forEach(function (campo) {
+    campo.addEventListener("change", function () { if (campo.files.length) campo.form.submit(); });
+  });
 
-    function salir() {
-      var form = document.createElement("form");
-      form.method = "post";
-      form.action = urlSalir;
-      var token = (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1] || "";
-      var campo = document.createElement("input");
-      campo.type = "hidden";
-      campo.name = "csrfmiddlewaretoken";
-      campo.value = decodeURIComponent(token);
-      form.appendChild(campo);
-      document.body.appendChild(form);
-      form.submit();
+  // Listas de selección múltiple: filtro y contador. Filtrar solo oculta filas; lo marcado se conserva.
+  function sinTildes(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+
+  document.querySelectorAll("[data-seleccion]").forEach(function (caja) {
+    var filtro = caja.querySelector("[data-seleccion-filtro]");
+    var sinResultados = caja.querySelector("[data-seleccion-sin-resultados]");
+    var contador = caja.querySelector("[data-seleccion-total]");
+    var opciones = Array.prototype.slice.call(caja.querySelectorAll(".seleccion-opcion"));
+
+    function contar() {
+      var n = caja.querySelectorAll("input[type=checkbox]:checked").length;
+      contador.textContent = n ? n + (n === 1 ? " seleccionado" : " seleccionados") : "Ninguno seleccionado";
     }
+    caja.addEventListener("change", contar);
+    contar();
 
-    function reiniciar() { clearTimeout(temporizador); temporizador = setTimeout(salir, limite); }
-
-    var ultimo = 0;
-    function alHaberActividad() {
-      var ahora = Date.now();
-      if (ahora - ultimo > 1000) { ultimo = ahora; reiniciar(); }  // como máximo una vez por segundo
-    }
-    ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"].forEach(function (evento) {
-      document.addEventListener(evento, alHaberActividad, { passive: true });
+    if (!filtro) return;
+    filtro.hidden = false;
+    filtro.addEventListener("keydown", function (evento) { if (evento.key === "Enter") evento.preventDefault(); });
+    filtro.addEventListener("input", function () {
+      var texto = sinTildes(filtro.value.trim());
+      var visibles = 0;
+      opciones.forEach(function (opcion) {
+        var coincide = sinTildes(opcion.textContent).indexOf(texto) !== -1;
+        opcion.hidden = !coincide;
+        if (coincide) visibles++;
+      });
+      sinResultados.hidden = visibles > 0;
     });
-    reiniciar();
-  })();
+  });
+
+  // Resumen de la asignación múltiple: cada plan se aplica a cada elemento.
+  document.querySelectorAll("[data-lote-resumen]").forEach(function (resumen) {
+    var form = resumen.closest("form");
+    function marcados(nombre) { return form.querySelectorAll('input[name="' + nombre + '"]:checked').length; }
+    function plural(n, singular, varios) { return n + " " + (n === 1 ? singular : varios); }
+
+    function actualizar() {
+      var elementos = marcados("materiales"), planes = marcados("planes"), bomberos = marcados("responsables");
+      resumen.hidden = !(elementos && planes && bomberos);
+      resumen.textContent = "Se crearán " + plural(elementos * planes, "asignación", "asignaciones") + ": " +
+        plural(elementos, "elemento", "elementos") + " × " + plural(planes, "plan", "planes") + ", a cargo de " +
+        plural(bomberos, "bombero", "bomberos") + ".";
+    }
+    form.addEventListener("change", actualizar);
+    actualizar();
+  });
 })();

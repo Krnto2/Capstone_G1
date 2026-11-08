@@ -1,5 +1,5 @@
 {% load sirema %}<a class="tarjeta-revision {% if r.estado == 'realizada' %}u-realizada{% else %}u-{{ r.urgencia }}{% endif %}"
-   href="{% if r.ejecutable and r.usuario_responsable_id == user.pk %}{% url 'revisiones:ejecutar' r.pk %}{% else %}{% url 'revisiones:detalle' r.pk %}{% endif %}">
+   href="{% if r.ejecutable and user in r.responsables.all %}{% url 'revisiones:ejecutar' r.pk %}{% else %}{% url 'revisiones:detalle' r.pk %}{% endif %}">
   <div class="d-flex justify-content-between align-items-start gap-2">
     <span class="titulo">{{ r.material.nombre }}</span>
     {% if r.estado == 'realizada' %}{{ r.resultado_global|badge_resultado }}
@@ -9,6 +9,7 @@
     {% else %}<span class="badge-sirema estado-pendiente">Pendiente</span>{% endif %}
   </div>
   <div class="meta"><span class="mono">{{ r.material.codigo_institucional|default:"s/c" }}</span> · {{ r.material.cajonera }}</div>
+  {% if r.responsables.all|length > 1 %}<div class="meta"><i class="bi bi-people" aria-hidden="true"></i> Compartida: {{ r.responsables_cortos }}</div>{% endif %}
   <div class="d-flex justify-content-between align-items-center mt-1 gap-2">
     <span class="chip">{{ r.plan.nombre }} · {{ r.plan.frecuencia_legible }}</span>
     {% if r.estado == 'realizada' %}

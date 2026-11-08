@@ -16,7 +16,6 @@
   {% include "componentes/_errores_formulario.html" %}
   {% if es_falla %}
     <h2 class="h5 fw-bold">Registrar hallazgo</h2>
-    <p class="text-body-secondary">Una revisión con falla no se puede finalizar sin describir el hallazgo.</p>
     {% campo form.descripcion "Descripción" %}
     <fieldset class="mb-3">
       <legend class="form-label fs-6">Criticidad</legend>
@@ -28,11 +27,9 @@
       </div>
       {% if form.criticidad.errors %}<ul class="errorlist">{% for e in form.criticidad.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </fieldset>
-    <div class="aviso-inline mb-3"><i class="bi bi-bell" aria-hidden="true"></i> Se notificará a la jefatura y el hallazgo quedará abierto en el panel y en la ficha del elemento.</div>
   {% endif %}
   {% campo form.observaciones %}
   <p class="small text-body-secondary"><i class="bi bi-person-check" aria-hidden="true"></i> Ejecutada por {{ user.nombre_completo }} · {% if revision.fecha_hora_inicio %}{{ revision.fecha_hora_inicio|date:"d-m-Y H:i" }} a {% endif %}{% now "H:i" %}</p>
-  <p class="small text-body-secondary">Una revisión finalizada no se puede modificar.</p>
   <div class="row g-2">
     <div class="col-5"><a class="btn btn-outline-negro btn-lg w-100" href="{% url 'revisiones:ejecutar' revision.pk %}">Volver</a></div>
     <div class="col-7"><button class="btn btn-sirema btn-lg w-100" type="submit">{% if es_falla %}Registrar y finalizar{% else %}Finalizar{% endif %}</button></div>

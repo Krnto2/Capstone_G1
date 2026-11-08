@@ -123,23 +123,18 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-     "OPTIONS": {"user_attributes": ("correo", "nombre", "apellidos", "rut")}},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-     "OPTIONS": {"min_length": 8}},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "accesos.validadores.AlfanumericoValidator"},
-]
+AUTH_PASSWORD_VALIDATORS = [{"NAME": "accesos.validadores.RequisitosContrasena"}]
 
 LOGIN_URL = "accesos:login"
 LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "accesos:login"
 
-# Cierre de sesión a los 15 minutos sin actividad (RNF-02).
-SESSION_COOKIE_AGE = 15 * 60
+# La sesión sigue abierta al cerrar el navegador y se renueva con cada uso: solo termina con
+# «Cerrar sesión», al cambiar la contraseña o tras este tiempo sin usarla.
+SIREMA_SESION_DIAS = int(env("SIREMA_SESION_DIAS", "30"))
+SESSION_COOKIE_AGE = SIREMA_SESION_DIAS * 24 * 60 * 60
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # Bloqueo de 15 minutos tras 5 intentos fallidos (RNF-02).
 AXES_ENABLED = env_bool("AXES_ENABLED", True)

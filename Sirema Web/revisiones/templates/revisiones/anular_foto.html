@@ -20,7 +20,6 @@
     <div class="alert alert-secondary mt-3 mb-0">Esta fotografía ya está anulada.</div>
   {% else %}
   <hr>
-  <p class="text-body-secondary">La imagen no se elimina: queda marcada como anulada y el motivo, el usuario y la fecha se registran en la bitácora.</p>
   {% include "componentes/_errores_formulario.html" %}
   <form method="post" novalidate>{% csrf_token %}
     {% campo form.motivo %}

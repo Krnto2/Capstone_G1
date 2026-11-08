@@ -86,13 +86,13 @@ class TestCP07Planes:
         assert PlanRevision.objects.count() == 1
 
     def test_asignar_plan_valida_y_notifica(self, plan, material, bombero, jefatura):
-        asignacion, creadas = services.asignar_plan(plan, material, bombero, hoy(), jefatura)
+        asignacion, creadas = services.asignar_plan(plan, material, [bombero], hoy(), jefatura)
         assert asignacion.activa and creadas
         assert Notificacion.objects.filter(usuario=bombero, tipo=TipoNotificacion.ASIGNACION).exists()
         with pytest.raises(ValidationError, match="vigente"):
-            services.asignar_plan(plan, material, bombero, hoy(), jefatura)
+            services.asignar_plan(plan, material, [bombero], hoy(), jefatura)
 
     def test_no_asigna_planes_a_elementos_dados_de_baja(self, plan, material, bombero, jefatura):
         material.dar_de_baja("prueba", jefatura)
         with pytest.raises(ValidationError, match="activos"):
-            services.asignar_plan(plan, material, bombero, hoy(), jefatura)
+            services.asignar_plan(plan, material, [bombero], hoy(), jefatura)

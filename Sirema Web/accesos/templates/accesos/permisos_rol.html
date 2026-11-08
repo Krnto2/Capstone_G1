@@ -2,7 +2,6 @@
 {% block titulo %}Permisos por rol{% endblock %}
 {% block contenido %}
 <div class="encabezado"><div><div class="ceja">Administración</div><h1>Permisos por rol</h1></div></div>
-<p class="text-body-secondary">Los permisos se validan en el servidor en cada solicitud. El rol Administrador conserva siempre la administración de usuarios y permisos, para no perder el acceso.</p>
 <form method="post">{% csrf_token %}
   {% for modulo, filas in modulos.items %}
   <div class="tarjeta tarjeta-lista mb-3">
@@ -26,6 +25,6 @@
     </div>
   </div>
   {% endfor %}
-  <button class="btn btn-sirema btn-touch" type="submit" data-confirmar="¿Guardar los cambios de permisos? Quedarán registrados en la bitácora.">Guardar permisos</button>
+  <button class="btn btn-sirema btn-touch" type="submit" data-confirmar="¿Guardar los permisos?">Guardar permisos</button>
 </form>
 {% endblock %}

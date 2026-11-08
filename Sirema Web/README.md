@@ -146,8 +146,8 @@ docker compose exec sirema-web tar -xzf /tmp/media.tar.gz -C /
 pytest --cov=accesos --cov=inventario --cov=revisiones --cov=reportes --cov=nucleo
 ```
 
-80 pruebas organizadas por caso de prueba del ERS (CP-01 a CP-12). Cobertura actual: 74 % global y
-79–96 % en servicios, modelos, programador e indicadores. GitHub Actions (`.github/workflows/sirema-pruebas.yml`, en la raíz del repositorio)
+147 pruebas organizadas por caso de prueba del ERS (CP-01 a CP-12). Cobertura actual: 79 % global y
+84–98 % en servicios, modelos, programador e indicadores. GitHub Actions (`.github/workflows/sirema-pruebas.yml`, en la raíz del repositorio)
 las ejecuta sobre PostgreSQL 16 y exige al menos 70 %.
 
 ## 4. Trazabilidad de requisitos
@@ -160,7 +160,7 @@ las ejecuta sobre PostgreSQL 16 y exige al menos 70 %.
 | RF-04 Código único | índice único parcial `uq_material_codigo_institucional` + `services.verificar_codigo` |
 | RF-05 Búsqueda | `MaterialQuerySet.buscar`, `FiltroMaterial` (desde 2 caracteres, filtros combinados) |
 | RF-06 Movimientos | `Material.trasladar` (movimiento + ubicación en una transacción) |
-| RF-07 Planes | `revisiones/services.py` (`guardar_plan` con versiones, `asignar_plan`), `programador.py` |
+| RF-07 Planes | `revisiones/services.py` (`guardar_plan` con versiones, `asignar_en_lote`, `cambiar_responsables`), `programador.py` |
 | RF-08 Ejecución | `services.registrar_resultado` / `finalizar`, `api.py`, `static/js/revision.js` (autoguardado y cola local) |
 | RF-09 Notificaciones y panel | `programador.emitir_avisos`, `revisiones/notificaciones.py`, `reportes/indicadores.py` |
 | RF-10 Historial, reportes, bitácora | ficha del elemento, `reportes/exportacion.py`, `accesos/auditoria.py` |
@@ -174,6 +174,15 @@ las ejecuta sobre PostgreSQL 16 y exige al menos 70 %.
 ### Decisiones de implementación respecto del modelo de datos
 
 - Las 19 tablas y sus columnas conservan los nombres del modelo relacional (`db_table` y `db_column`).
+- Una tarea puede estar a cargo de varios bomberos: `asignacion_responsable` y `revision_responsable`
+  reemplazan a `id_usuario_responsable`. Cualquiera de ellos ejecuta la revisión,
+  basta una vez y cuenta una sola en el cumplimiento.
+- La foto de perfil se guarda en la tabla `foto_perfil` (22 tablas en total): se respalda con la base y se
+  entrega sin depender de Nginx ni del volumen `media`. Las fotografías de evidencia siguen en `media`.
+- Contraseñas: difiere del RNF-02 de la ERS. Solo se exige una mayúscula, un número y un carácter especial.
+- Sesiones: difiere del RNF-02 de la ERS. Un usuario puede tener varias sesiones abiertas a la vez, y estas
+  siguen abiertas al cerrar el navegador. Terminan con «Cerrar sesión», al cambiar la contraseña o tras
+  `SIREMA_SESION_DIAS` sin uso (30 por defecto).
 - Los tipos enumerados se implementan como `varchar` con una restricción CHECK por columna: la misma
   garantía de integridad que un ENUM de PostgreSQL, compatible con las migraciones de Django.
 - `rol_permiso` y `resultado_punto` usan clave primaria compuesta (`CompositePrimaryKey` de Django 5.2).

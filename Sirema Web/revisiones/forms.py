@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from accesos.models import Usuario
-from inventario.models import Unidad
+from inventario.models import Material, Unidad
 from nucleo.enums import CriticidadHallazgo, EstadoHallazgo, EstadoRevision, TipoDatoPunto
 from nucleo.formularios import CampoFecha, Formulario, FormularioModelo
 from nucleo.utilidades import hoy
@@ -11,12 +11,24 @@ from .models import PlanRevision
 
 
 def responsables():
-    return Usuario.objects.con_permiso("revision.ejecutar").order_by("apellidos", "nombre")
+    return Usuario.objects.con_permiso("revision.ejecutar").select_related("rol").order_by("apellidos", "nombre")
 
 
 class CampoUsuario(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.nombre_completo} · {obj.rol}"
+
+
+class CampoUsuarios(forms.ModelMultipleChoiceField):
+    widget = forms.CheckboxSelectMultiple
+    label_from_instance = CampoUsuario.label_from_instance
+
+
+class CampoMateriales(forms.ModelMultipleChoiceField):
+    widget = forms.CheckboxSelectMultiple
+
+    def label_from_instance(self, obj):
+        return f"{obj.codigo_institucional or 's/c'} · {obj.nombre} · {obj.cajonera} · {obj.categoria}"
 
 
 class FormularioPlan(FormularioModelo):
@@ -27,14 +39,12 @@ class FormularioPlan(FormularioModelo):
         fields = ["nombre", "descripcion", "frecuencia_valor", "frecuencia_unidad", "dias_tolerancia",
                   "exige_fotografia"]
         widgets = {
-            "descripcion": forms.Textarea(attrs={"rows": 2, "placeholder": "Indicaciones del fabricante o del "
-                                                                           "procedimiento, visibles al ejecutar."}),
+            "descripcion": forms.Textarea(attrs={"rows": 2, "placeholder": "Indicaciones del fabricante"}),
             "frecuencia_valor": forms.NumberInput(attrs={"min": 1, "inputmode": "numeric"}),
             "dias_tolerancia": forms.NumberInput(attrs={"min": 0, "inputmode": "numeric"}),
         }
         help_texts = {
-            "dias_tolerancia": "Días después de la fecha programada antes de quedar vencida.",
-            "exige_fotografia": "La revisión no se finaliza sin al menos una fotografía.",
+            "dias_tolerancia": "Días extra antes de vencer.",
         }
 
     def validate_unique(self):
@@ -91,19 +101,23 @@ FormsetPuntos = forms.formset_factory(FormularioPunto, formset=BaseFormsetPuntos
 
 
 class FormularioAsignacion(Formulario):
-    """CU-C3 Asignar plan a material (el elemento se elige tras buscarlo)."""
+    """CU-C3 Asignar planes a material: cada plan se aplica a cada elemento, con los mismos responsables."""
 
-    plan = forms.ModelChoiceField(label="Plan de revisión", queryset=PlanRevision.objects.none(),
-                                  empty_label="Seleccione…")
-    responsable = CampoUsuario(label="Bombero responsable", queryset=Usuario.objects.none(),
-                               empty_label="Seleccione…")
+    materiales = CampoMateriales(label="Elementos", queryset=Material.objects.none(),
+                                 error_messages={"required": "Seleccione al menos un elemento."})
+    planes = forms.ModelMultipleChoiceField(label="Planes de revisión", queryset=PlanRevision.objects.none(),
+                                            widget=forms.CheckboxSelectMultiple,
+                                            error_messages={"required": "Seleccione al menos un plan."})
+    responsables = CampoUsuarios(label="Bomberos responsables", queryset=Usuario.objects.none(),
+                                 error_messages={"required": "Seleccione al menos un bombero."})
     fecha_inicio = forms.DateField(label="Fecha de la primera revisión", widget=CampoFecha())
     fecha_termino = forms.DateField(label="Fecha de término", required=False, widget=CampoFecha())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["plan"].queryset = PlanRevision.objects.filter(activo=True, puntos__isnull=False).distinct()
-        self.fields["responsable"].queryset = responsables()
+        self.fields["materiales"].queryset = Material.objects.activos().con_ubicacion()
+        self.fields["planes"].queryset = PlanRevision.objects.filter(activo=True, puntos__isnull=False).distinct()
+        self.fields["responsables"].queryset = responsables()
         self.fields["fecha_inicio"].initial = hoy()
 
     def clean_fecha_inicio(self):
@@ -136,8 +150,7 @@ class FormularioFinalizar(Formulario):
         self.requiere_hallazgo = requiere_hallazgo
         self.fields["descripcion"].required = requiere_hallazgo
         self.fields["criticidad"].required = requiere_hallazgo
-        self.fields["descripcion"].error_messages["required"] = ("Una revisión con falla no se finaliza sin "
-                                                                 "describir el hallazgo.")
+        self.fields["descripcion"].error_messages["required"] = "Describa el hallazgo."
         self.fields["criticidad"].error_messages["required"] = "Seleccione la criticidad."
 
 
@@ -153,12 +166,15 @@ class FormularioCierreHallazgo(Formulario):
                                                             "servicio técnico."}))
 
 
-class FormularioReasignar(Formulario):
-    responsable = CampoUsuario(label="Nuevo responsable", queryset=Usuario.objects.none(), empty_label="Seleccione…")
+class FormularioResponsables(Formulario):
+    """Quiénes quedan a cargo de una revisión o de una asignación."""
+
+    responsables = CampoUsuarios(label="Bomberos responsables", queryset=Usuario.objects.none(),
+                                 error_messages={"required": "Seleccione al menos un bombero."})
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["responsable"].queryset = responsables()
+        self.fields["responsables"].queryset = responsables()
 
 
 class FiltroRevisiones(Formulario):

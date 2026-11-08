@@ -4,7 +4,7 @@
 <div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:planes' %}">Planes de revisión</a></div>
   <h1>{% if plan %}Modificar {{ plan }}{% else %}Definir plan de revisión{% endif %}</h1></div></div>
 {% if versiona %}
-  <div class="alert alert-info"><i class="bi bi-layers" aria-hidden="true"></i> Este plan ya tiene revisiones ejecutadas. Al guardar se creará la <strong>versión {{ plan.version|add:1 }}</strong>: las revisiones históricas conservan la versión actual y las asignaciones vigentes pasan a la nueva.</div>
+  <div class="alert alert-info"><i class="bi bi-layers" aria-hidden="true"></i> Al guardar se crea la <strong>versión {{ plan.version|add:1 }}</strong>.</div>
 {% endif %}
 <form method="post" novalidate id="form-plan">{% csrf_token %}
   {% include "componentes/_errores_formulario.html" %}

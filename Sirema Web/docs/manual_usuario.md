@@ -2,14 +2,22 @@
 
 SIREMA se usa desde el navegador del celular o del computador, conectado a la red del cuartel.
 Ingrese con su **correo** y **contraseña**. Si la olvida, el administrador le asigna una nueva
-(no hay recuperación por correo). Tras 5 intentos fallidos la cuenta se bloquea 15 minutos, y la
-sesión se cierra sola tras 15 minutos sin actividad. La sesión solo puede estar abierta en un dispositivo:
-si ingresa desde otro, la anterior se cierra.
+(no hay recuperación por correo). Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.
+
+La sesión sigue abierta aunque cierre el navegador, hasta que toque **Cerrar sesión** o pasen 30 días sin usarla.
+Puede tenerla abierta en varios dispositivos a la vez. Si pierde un celular, cambie su contraseña: eso
+cierra la sesión en todos los demás dispositivos.
+
+**Mi perfil.** Toque su foto para cambiarla y use **Editar datos** para corregir nombre, apellidos, correo
+y teléfono. El RUT y el rol los cambia el administrador. La contraseña debe tener al menos una mayúscula,
+un número y un carácter especial.
 
 ## Bombero
 
 **Mis revisiones** (menú *Revisiones*). Lista sus revisiones ordenadas por urgencia, con tres pestañas:
 *Pendientes*, *Vencidas* y *Realizadas*. Rojo significa vencida y ámbar que vence hoy o mañana.
+Una revisión *Compartida* está a cargo de varios bomberos: cualquiera puede ejecutarla y basta que uno
+la finalice.
 
 **Ejecutar una revisión.**
 1. Toque la revisión. Aparecen el equipo, su ubicación y los puntos de control del plan.
@@ -42,9 +50,11 @@ Además de lo anterior:
   El código institucional es único y no se reutiliza, aunque el elemento esté dado de baja.
 - **Planes de revisión**: defina qué se controla (puntos de control), cada cuánto y con cuántos días de
   tolerancia. Si modifica un plan con revisiones ya ejecutadas, el sistema crea una versión nueva.
-- **Asignaciones**: busque el elemento, elija el plan, el bombero responsable y la fecha de la primera
-  revisión. El programador genera las siguientes de forma automática.
-- **Revisiones**: consulte todas las revisiones y reasigne el responsable de una revisión abierta.
+- **Asignaciones**: marque uno o varios elementos, uno o varios planes, uno o varios bomberos y la fecha
+  de la primera revisión. Cada plan se aplica a cada elemento. Con varios bomberos la tarea queda
+  compartida: cualquiera puede ejecutarla y basta que uno la finalice. Con **Responsables** suma o quita
+  bomberos de una asignación vigente. El programador genera las siguientes revisiones de forma automática.
+- **Revisiones**: consulte todas las revisiones y reasigne los responsables de una revisión abierta.
 - **Hallazgos**: márquelos *en reparación* y ciérrelos registrando la acción tomada.
 - **Fotografías**: puede anular una foto indicando el motivo. No se elimina: queda en la bitácora.
 

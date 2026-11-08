@@ -130,7 +130,7 @@ class MaterialEditarView(PermisoRequeridoMixin, View):
             except ValidationError as error:
                 _errores_a_formulario(form, error)
             else:
-                messages.success(request, "La ficha fue actualizada.")
+                messages.success(request, "Ficha actualizada.")
                 return redirect("inventario:detalle", pk=pk)
         return render(request, self.template_name, {"form": form, "material": material,
                                                     "titulo": "Modificar ficha"})

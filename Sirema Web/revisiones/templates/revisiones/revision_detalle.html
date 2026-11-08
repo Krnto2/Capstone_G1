@@ -19,7 +19,7 @@
         <dt>Estado</dt><dd>{{ revision.estado|badge_estado }}{% if revision.en_plazo is False %} <span class="badge-sirema resultado-observacion">Fuera de plazo</span>{% endif %}</dd>
         {% if revision.resultado_global %}<dt>Resultado global</dt><dd>{{ revision.resultado_global|badge_resultado }}</dd>{% endif %}
         <dt>Plan</dt><dd>{{ revision.plan }} · {{ revision.plan.frecuencia_legible }}</dd>
-        <dt>Responsable</dt><dd>{{ revision.usuario_responsable.nombre_completo }}</dd>
+        <dt>Responsable{{ revision.responsables.all|length|pluralize }}</dt><dd>{{ revision.responsables_completos }}</dd>
         <dt>Fechas</dt><dd>Programada {{ revision.fecha_programada|date:"d-m-Y" }} · límite {{ revision.fecha_limite|date:"d-m-Y" }}</dd>
         {% if revision.usuario_ejecutor %}<dt>Ejecutada por</dt><dd>{{ revision.usuario_ejecutor.nombre_completo }}<br><span class="fw-normal">{{ revision.fecha_hora_inicio|date:"d-m-Y H:i" }} a {{ revision.fecha_hora_termino|date:"H:i" }}</span></dd>{% endif %}
         {% if revision.observaciones %}<dt>Observaciones</dt><dd class="fw-normal">{{ revision.observaciones }}</dd>{% endif %}

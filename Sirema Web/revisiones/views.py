@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -17,7 +15,7 @@ from nucleo.enums import EstadoHallazgo, EstadoRevision, ResultadoControl
 
 from . import services
 from .forms import (FiltroHallazgos, FiltroRevisiones, FormsetPuntos, FormularioAsignacion, FormularioCierreHallazgo,
-                    FormularioFinalizar, FormularioMotivo, FormularioPlan, FormularioReasignar)
+                    FormularioFinalizar, FormularioMotivo, FormularioPlan, FormularioResponsables)
 from .models import AsignacionPlan, Fotografia, Hallazgo, Notificacion, PlanRevision, Revision
 
 # ------------------------------------------------------------ Revisiones ----
@@ -32,11 +30,11 @@ class MisRevisionesView(PermisoRequeridoMixin, TemplateView):
     def get_context_data(self, **kwargs):
         usuario = self.request.user
         base = Revision.objects.completa()
-        pendientes = base.filter(usuario_responsable=usuario,
+        pendientes = base.filter(responsables=usuario,
                                  estado__in=[EstadoRevision.PENDIENTE, EstadoRevision.EN_CURSO]).por_urgencia()
-        vencidas = base.filter(usuario_responsable=usuario, estado=EstadoRevision.VENCIDA).por_urgencia()
-        realizadas = base.filter(Q(usuario_ejecutor=usuario) | Q(usuario_responsable=usuario),
-                                 estado=EstadoRevision.REALIZADA).order_by("-fecha_hora_termino")[:30]
+        vencidas = base.filter(responsables=usuario, estado=EstadoRevision.VENCIDA).por_urgencia()
+        realizadas = base.filter(Q(usuario_ejecutor=usuario) | Q(responsables=usuario),
+                                 estado=EstadoRevision.REALIZADA).distinct().order_by("-fecha_hora_termino")[:30]
         pestana = self.request.GET.get("ver", "pendientes")
         if pestana not in ("pendientes", "vencidas", "realizadas"):
             pestana = "pendientes"
@@ -68,7 +66,7 @@ class RevisionListaView(PermisoRequeridoMixin, ListView):
             if datos["unidad"]:
                 revisiones = revisiones.filter(asignacion__material__cajonera__unidad=datos["unidad"])
             if datos["responsable"]:
-                revisiones = revisiones.filter(usuario_responsable=datos["responsable"])
+                revisiones = revisiones.filter(responsables=datos["responsable"])
             if datos["desde"]:
                 revisiones = revisiones.filter(fecha_limite__gte=datos["desde"])
             if datos["hasta"]:
@@ -149,7 +147,7 @@ class FinalizarView(PermisoRequeridoMixin, View):
             raise PermissionDenied
         faltan = services.faltantes(revision)
         if faltan.hay:
-            messages.error(request, f"{faltan.texto}. Complete la lista antes de finalizar.")
+            messages.error(request, f"{faltan.texto}.")
             return revision, redirect("revisiones:ejecutar", pk=pk)
         return revision, None
 
@@ -182,9 +180,9 @@ class FinalizarView(PermisoRequeridoMixin, View):
             else:
                 texto = "Revisión finalizada"
                 if revision.resultado_global == ResultadoControl.FALLA:
-                    texto += ". El hallazgo quedó abierto y la jefatura fue notificada"
+                    texto += ". Hallazgo abierto"
                 if revision.en_plazo is False:
-                    texto += ". Quedó registrada fuera de plazo"
+                    texto += ". Fuera de plazo"
                 messages.success(request, texto + ".")
                 return redirect("revisiones:detalle", pk=revision.pk)
         return render(request, self.template_name, self._contexto(revision, form))
@@ -196,19 +194,19 @@ class ReasignarView(PermisoRequeridoMixin, View):
 
     def get(self, request, pk):
         revision = get_object_or_404(Revision.objects.completa(), pk=pk)
-        return render(request, self.template_name, {"revision": revision, "form": FormularioReasignar(
-            initial={"responsable": revision.usuario_responsable_id})})
+        return render(request, self.template_name, {"revision": revision, "form": FormularioResponsables(
+            initial={"responsables": [u.pk for u in revision.responsables.all()]})})
 
     def post(self, request, pk):
         revision = get_object_or_404(Revision.objects.completa(), pk=pk)
-        form = FormularioReasignar(request.POST)
+        form = FormularioResponsables(request.POST)
         if form.is_valid():
             try:
-                services.reasignar(revision, form.cleaned_data["responsable"], request.user)
+                services.reasignar(revision, form.cleaned_data["responsables"], request.user)
             except services.ErrorRevision as error:
                 form.add_error(None, error.messages[0])
             else:
-                messages.success(request, f"Revisión reasignada a {revision.usuario_responsable.nombre_completo}.")
+                messages.success(request, f"Revisión a cargo de {revision.responsables_completos}.")
                 return redirect("revisiones:detalle", pk=pk)
         return render(request, self.template_name, {"revision": revision, "form": form})
 
@@ -255,7 +253,7 @@ class AnularFotografiaView(PermisoRequeridoMixin, View):
             except services.ErrorRevision as error:
                 form.add_error(None, error.messages[0])
             else:
-                messages.success(request, "La fotografía fue anulada. El motivo quedó en la bitácora.")
+                messages.success(request, "Fotografía anulada.")
                 return redirect("revisiones:detalle", pk=foto.revision_id)
         return render(request, self.template_name, {"foto": foto, "form": form,
                                                     "integra": ServicioAlmacenamiento().verificar(foto)})
@@ -309,8 +307,7 @@ class PlanFormView(PermisoRequeridoMixin, View):
                 form.add_error(None, error)
             else:
                 if es_nueva:
-                    messages.success(request, f"Se creó la versión {guardado.version} del plan. Las revisiones "
-                                              "ya ejecutadas conservan la versión anterior.")
+                    messages.success(request, f"Versión {guardado.version} creada.")
                 else:
                     messages.success(request, f"Plan «{guardado}» guardado.")
                 return redirect("revisiones:plan", pk=guardado.pk)
@@ -330,7 +327,7 @@ class PlanDetalleView(PermisoRequeridoMixin, DetailView):
         plan = self.object
         return super().get_context_data(
             asignaciones=plan.asignaciones.filter(activa=True).select_related(
-                "material__cajonera__unidad", "usuario_responsable"),
+                "material__cajonera__unidad").prefetch_related("responsables"),
             versiones=PlanRevision.objects.filter(nombre__iexact=plan.nombre).exclude(pk=plan.pk),
             **kwargs)
 
@@ -341,7 +338,7 @@ class PlanDesactivarView(PermisoRequeridoMixin, View):
     def post(self, request, pk):
         plan = get_object_or_404(PlanRevision, pk=pk, activo=True)
         cerradas = services.desactivar_plan(plan, request.user)
-        messages.success(request, f"Plan desactivado. Se cerraron {cerradas} asignaciones vigentes.")
+        messages.success(request, f"Plan desactivado. {cerradas} asignaciones cerradas.")
         return redirect("revisiones:planes")
 
 
@@ -354,8 +351,8 @@ class AsignacionListaView(PermisoRequeridoMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        asignaciones = AsignacionPlan.objects.select_related("plan", "material__cajonera__unidad",
-                                                             "usuario_responsable")
+        asignaciones = AsignacionPlan.objects.select_related("plan", "material__cajonera__unidad").prefetch_related(
+            "responsables")
         if self.request.GET.get("ver") != "todas":
             asignaciones = asignaciones.filter(activa=True)
         q = self.request.GET.get("q", "").strip()
@@ -371,48 +368,66 @@ class AsignacionListaView(PermisoRequeridoMixin, ListView):
 
 
 class AsignacionCrearView(PermisoRequeridoMixin, View):
-    """CU-C3 Asignar plan a material (incluye CU-B4 Buscar material)."""
+    """CU-C3 Asignar planes a uno o varios elementos, a cargo de uno o varios bomberos."""
 
     permiso_requerido = "asignacion.administrar"
     template_name = "revisiones/asignacion_form.html"
 
-    def _contexto(self, request, form, material=None):
-        q = request.GET.get("q", "").strip()
-        resultados = []
-        if len(q) >= 2:
-            resultados = list(Material.objects.activos().con_ubicacion().buscar(q)[:20])
-        if material is None and request.GET.get("material"):
-            material = Material.objects.activos().con_ubicacion().filter(pk=request.GET["material"]).first()
-        planes_vigentes = []
-        if material:
-            planes_vigentes = list(material.asignaciones.filter(activa=True).select_related("plan"))
-        return {"form": form, "q": q, "resultados": resultados, "material": material,
-                "planes_vigentes": planes_vigentes, "busqueda_corta": len(q) == 1}
-
     def get(self, request):
-        form = FormularioAsignacion(initial={"plan": request.GET.get("plan")})
-        return render(request, self.template_name, self._contexto(request, form))
+        form = FormularioAsignacion(initial={"planes": request.GET.getlist("plan"),
+                                             "materiales": request.GET.getlist("material")})
+        return render(request, self.template_name, {"form": form})
 
     def post(self, request):
         form = FormularioAsignacion(request.POST)
-        material = Material.objects.con_ubicacion().filter(pk=request.POST.get("material") or 0).first()
-        if material is None:
-            form.add_error(None, "Busque y seleccione el elemento al que asignará el plan.")
-        if form.is_valid() and material is not None:
+        if form.is_valid():
             datos = form.cleaned_data
             try:
-                asignacion, creadas = services.asignar_plan(datos["plan"], material, datos["responsable"],
-                                                            datos["fecha_inicio"], request.user,
-                                                            datos.get("fecha_termino"))
+                resultado = services.asignar_en_lote(datos["planes"], datos["materiales"], datos["responsables"],
+                                                     datos["fecha_inicio"], request.user, datos.get("fecha_termino"))
             except ValidationError as error:
                 form.add_error(None, error)
             else:
-                limite = datos["fecha_inicio"] + timedelta(days=datos["plan"].dias_tolerancia)
-                messages.success(request, f"Plan asignado a {material}. Primera revisión: "
-                                          f"{datos['fecha_inicio']:%d-%m-%Y} (límite {limite:%d-%m-%Y}). "
-                                          f"Se notificó a {datos['responsable'].nombre_completo}.")
+                total = len(resultado.asignaciones)
+                nombres = ", ".join(u.nombre_corto for u in datos["responsables"])
+                messages.success(request, f"{total} asignaci{'ón creada' if total == 1 else 'ones creadas'}. "
+                                          f"Primera revisión: {datos['fecha_inicio']:%d-%m-%Y}. "
+                                          f"Se notificó a {nombres}.")
+                if resultado.omitidas:
+                    detalle = "; ".join(f"{plan.nombre} en {material}" for plan, material in resultado.omitidas)
+                    messages.warning(request, f"Ya estaban vigentes y se omitieron: {detalle}.")
                 return redirect("revisiones:asignaciones")
-        return render(request, self.template_name, self._contexto(request, form, material))
+        return render(request, self.template_name, {"form": form})
+
+
+class AsignacionResponsablesView(PermisoRequeridoMixin, View):
+    """Suma o quita bomberos de una asignación vigente y de sus revisiones abiertas."""
+
+    permiso_requerido = "asignacion.administrar"
+    template_name = "revisiones/asignacion_responsables.html"
+
+    def _asignacion(self, pk):
+        consulta = AsignacionPlan.objects.select_related("plan", "material__cajonera__unidad")
+        return get_object_or_404(consulta.prefetch_related("responsables"), pk=pk, activa=True)
+
+    def get(self, request, pk):
+        asignacion = self._asignacion(pk)
+        form = FormularioResponsables(initial={"responsables": [u.pk for u in asignacion.responsables.all()]})
+        return render(request, self.template_name, {"asignacion": asignacion, "form": form})
+
+    def post(self, request, pk):
+        asignacion = self._asignacion(pk)
+        form = FormularioResponsables(request.POST)
+        if form.is_valid():
+            try:
+                services.cambiar_responsables(asignacion, form.cleaned_data["responsables"], request.user)
+            except services.ErrorRevision as error:
+                form.add_error(None, error.messages[0])
+            else:
+                messages.success(request, f"{asignacion.material} queda a cargo de "
+                                          f"{asignacion.responsables_completos}.")
+                return redirect("revisiones:asignaciones")
+        return render(request, self.template_name, {"asignacion": asignacion, "form": form})
 
 
 class AsignacionCerrarView(PermisoRequeridoMixin, View):
@@ -425,7 +440,7 @@ class AsignacionCerrarView(PermisoRequeridoMixin, View):
         except ValidationError as error:
             messages.error(request, error.messages[0])
         else:
-            messages.success(request, "La asignación fue cerrada. No se generarán nuevas revisiones.")
+            messages.success(request, "Asignación cerrada.")
         return redirect("revisiones:asignaciones")
 
 
@@ -482,7 +497,7 @@ class HallazgoDetalleView(View):
         try:
             if request.POST.get("accion") == "reparacion":
                 services.marcar_en_reparacion(hallazgo, request.user)
-                messages.success(request, "El hallazgo quedó en reparación.")
+                messages.success(request, "Hallazgo en reparación.")
                 return redirect("revisiones:hallazgo", pk=pk)
             form = FormularioCierreHallazgo(request.POST)
             if form.is_valid():
@@ -517,8 +532,8 @@ class NotificacionAbrirView(View):
         revision = aviso.revision
         if revision is None:
             return redirect("revisiones:notificaciones")
-        if revision.ejecutable and services.puede_ejecutar(revision, request.user) \
-                and revision.usuario_responsable_id == request.user.pk:
+        if revision.ejecutable and revision.es_responsable(request.user) \
+                and services.puede_ejecutar(revision, request.user):
             return redirect("revisiones:ejecutar", pk=revision.pk)
         if aviso.tipo == "hallazgo" and request.user.tiene_permiso("hallazgo.gestionar"):
             hallazgo = revision.hallazgos.first()

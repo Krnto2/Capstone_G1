@@ -3,6 +3,8 @@ Módulo de accesos: rol, permiso, rol_permiso, usuario y evento_auditoria.
 
 Los nombres de tablas y columnas son los del modelo relacional de la Fase 2.
 """
+import hashlib
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -102,14 +104,10 @@ class Usuario(AbstractBaseUser):
     correo = models.EmailField(max_length=120, unique=True)
     password = models.CharField("contraseña", max_length=255, db_column="hash_contrasena")
     telefono = models.CharField("teléfono", max_length=15, null=True, blank=True)
-    foto_perfil = models.CharField("foto de perfil", max_length=300, null=True, blank=True,
-                                   db_column="foto_perfil")
+    foto_version = models.CharField(max_length=16, null=True, blank=True, editable=False)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField("último acceso", null=True, blank=True, db_column="ultimo_acceso")
-    # Clave de la única sesión activa permitida (RNF-02): un ingreso nuevo cierra la anterior.
-    sesion_activa = models.CharField("sesión activa", max_length=40, null=True, blank=True,
-                                     db_column="sesion_activa")
 
     objects = UsuarioManager()
 
@@ -144,12 +142,17 @@ class Usuario(AbstractBaseUser):
 
     @property
     def tiene_foto(self):
-        return bool(self.foto_perfil)
+        return bool(self.foto_version)
 
-    @property
-    def foto_version(self):
-        """Token breve para refrescar la caché del navegador al cambiar la foto."""
-        return (self.foto_perfil or "")[-20:]
+    def cambiar_foto(self, imagen):
+        FotoPerfil.objects.update_or_create(usuario=self, defaults={"imagen": imagen})
+        self.foto_version = hashlib.sha256(imagen).hexdigest()[:16]
+        self.save(update_fields=["foto_version"])
+
+    def quitar_foto(self):
+        FotoPerfil.objects.filter(usuario=self).delete()
+        self.foto_version = None
+        self.save(update_fields=["foto_version"])
 
     @property
     def es_sistema(self):
@@ -183,6 +186,17 @@ class Usuario(AbstractBaseUser):
             raise ValidationError("No se puede desactivar al único administrador activo.")
         self.activo = False
         self.save(update_fields=["activo"])
+
+
+class FotoPerfil(models.Model):
+    """Foto del usuario. Va en la base para respaldarse con ella y no depender de Nginx ni de volúmenes."""
+
+    usuario = models.OneToOneField(Usuario, primary_key=True, on_delete=models.CASCADE, db_column="id_usuario",
+                                   related_name="foto")
+    imagen = models.BinaryField()
+
+    class Meta:
+        db_table = "foto_perfil"
 
 
 class EventoAuditoria(models.Model):

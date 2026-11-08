@@ -70,6 +70,33 @@ def _gps_exif(exif):
     return None, None
 
 
+def _a_rgb(imagen):
+    if imagen.mode in ("RGBA", "LA", "P"):
+        imagen = imagen.convert("RGBA")
+        fondo = Image.new("RGB", imagen.size, (255, 255, 255))
+        fondo.paste(imagen, mask=imagen.split()[-1])
+        return fondo
+    return imagen if imagen.mode == "RGB" else imagen.convert("RGB")
+
+
+def foto_de_perfil(archivo, lado=320):
+    """Recorta la imagen al centro y devuelve un JPEG cuadrado liviano, listo para la base de datos."""
+    if getattr(archivo, "size", 0) > settings.SIREMA_FOTO_MAX_BYTES:
+        raise ErrorAlmacenamiento("La imagen supera los 10 MB.")
+    try:
+        imagen = Image.open(archivo)
+        if imagen.format not in FORMATOS_ACEPTADOS:
+            raise ErrorAlmacenamiento("Use una imagen JPEG, PNG o WebP.")
+        imagen.load()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise ErrorAlmacenamiento("El archivo no es una imagen válida.") from exc
+    recorte = ImageOps.fit(_a_rgb(ImageOps.exif_transpose(imagen)), (lado, lado), Image.Resampling.LANCZOS,
+                           centering=(.5, .4))
+    bufer = io.BytesIO()
+    recorte.save(bufer, "JPEG", quality=85, optimize=True)
+    return bufer.getvalue()
+
+
 class ServicioAlmacenamiento:
     """IAlmacenamiento: guardar(archivo) y verificar(foto)."""
 
@@ -130,15 +157,7 @@ class ServicioAlmacenamiento:
         )
 
     def _redimensionar(self, imagen):
-        imagen = ImageOps.exif_transpose(imagen)
-        if imagen.mode in ("RGBA", "LA", "P"):
-            imagen = imagen.convert("RGBA")
-            fondo = Image.new("RGB", imagen.size, (255, 255, 255))
-            fondo.paste(imagen, mask=imagen.split()[-1])
-            imagen = fondo
-        elif imagen.mode != "RGB":
-            imagen = imagen.convert("RGB")
-
+        imagen = _a_rgb(ImageOps.exif_transpose(imagen))
         lado = settings.SIREMA_FOTO_LADO_MAXIMO
         limite = settings.SIREMA_FOTO_SALIDA_MAX_BYTES
         calidad = 85

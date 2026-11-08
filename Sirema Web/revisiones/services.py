@@ -66,11 +66,11 @@ class Faltantes:
 def puede_ejecutar(revision, usuario):
     if not usuario.tiene_permiso("revision.ejecutar"):
         return False
-    return revision.usuario_responsable_id == usuario.pk or usuario.tiene_permiso("revision.supervisar")
+    return revision.es_responsable(usuario) or usuario.tiene_permiso("revision.supervisar")
 
 
 def puede_ver(revision, usuario):
-    return (revision.usuario_responsable_id == usuario.pk or revision.usuario_ejecutor_id == usuario.pk
+    return (revision.es_responsable(usuario) or revision.usuario_ejecutor_id == usuario.pk
             or usuario.tiene_permiso("revision.supervisar") or usuario.tiene_permiso("material.consultar"))
 
 
@@ -238,8 +238,7 @@ def finalizar(revision, usuario, observaciones=None, hallazgo=None):
             descripcion = (datos_hallazgo.get("descripcion") or "").strip()
             criticidad = datos_hallazgo.get("criticidad")
             if not descripcion or criticidad not in CriticidadHallazgo.values:
-                raise ErrorRevision("Una revisión con falla no se puede finalizar sin describir el hallazgo "
-                                    "y su criticidad.", requiere_hallazgo=True)
+                raise ErrorRevision("Describa el hallazgo y su criticidad.", requiere_hallazgo=True)
 
         ahora = timezone.now()
         revision.estado = EstadoRevision.REALIZADA
@@ -278,21 +277,36 @@ def finalizar(revision, usuario, observaciones=None, hallazgo=None):
     return revision
 
 
-def reasignar(revision, responsable, usuario):
+def _validar_responsables(responsables):
+    responsables = list(responsables)
+    if not responsables:
+        raise ErrorRevision("Seleccione al menos un bombero responsable.")
+    for responsable in responsables:
+        if not responsable.activo or not responsable.tiene_permiso("revision.ejecutar"):
+            raise ErrorRevision(f"{responsable.nombre_completo} no puede ejecutar revisiones.")
+    return responsables
+
+
+def _ids(responsables):
+    return sorted(u.pk for u in responsables)
+
+
+def reasignar(revision, responsables, usuario):
+    """Deja una revisión abierta a cargo de uno o varios bomberos. Avisa solo a quienes se suman."""
     if not revision.ejecutable:
         raise ErrorRevision("Solo se reasignan revisiones abiertas.")
-    if not responsable.activo or not responsable.tiene_permiso("revision.ejecutar"):
-        raise ErrorRevision("El nuevo responsable no puede ejecutar revisiones.")
-    anterior = revision.usuario_responsable_id
+    responsables = _validar_responsables(responsables)
+    anteriores = list(revision.responsables.all())
     with transaction.atomic():
-        revision.usuario_responsable = responsable
-        revision.save(update_fields=["usuario_responsable"])
+        revision.responsables.set(responsables)
         auditoria.registrar(AccionAuditoria.MODIFICACION, "revision", revision.pk,
-                            {"id_usuario_responsable": anterior}, {"id_usuario_responsable": responsable.pk},
-                            usuario=usuario)
-        notificaciones.notificar(responsable, TipoNotificacion.ASIGNACION,
-                                 f"Se le reasignó la revisión de {notificaciones.describir(revision)}, "
-                                 f"fecha límite {revision.fecha_limite:%d-%m-%Y}.", revision)
+                            {"id_usuarios_responsables": _ids(anteriores)},
+                            {"id_usuarios_responsables": _ids(responsables)}, usuario=usuario)
+        for responsable in responsables:
+            if responsable not in anteriores:
+                notificaciones.notificar(responsable, TipoNotificacion.ASIGNACION,
+                                         f"Se le reasignó la revisión de {notificaciones.describir(revision)}, "
+                                         f"fecha límite {revision.fecha_limite:%d-%m-%Y}.", revision)
     return revision
 
 
@@ -391,7 +405,7 @@ def guardar_plan(plan, datos, puntos, usuario):
                             nuevos={**auditoria.instantanea(nuevo), "reemplaza_a": plan.pk, "puntos": len(puntos)})
         auditoria.registrar(AccionAuditoria.MODIFICACION, "plan_revision", plan.pk, {"activo": True},
                             {"activo": False, "reemplazado_por": nuevo.pk}, usuario=usuario)
-        for asignacion in plan.asignaciones.filter(activa=True).select_related("material", "usuario_responsable"):
+        for asignacion in plan.asignaciones.filter(activa=True).select_related("material"):
             ultima = asignacion.revisiones.aggregate(m=Max("fecha_programada"))["m"]
             inicio = nuevo.proxima_fecha(ultima) if ultima else max(asignacion.fecha_inicio, hoy())
             termino_original = asignacion.fecha_termino
@@ -399,8 +413,8 @@ def guardar_plan(plan, datos, puntos, usuario):
             if termino_original and inicio > termino_original:
                 continue
             nueva = AsignacionPlan.objects.create(plan=nuevo, material=asignacion.material,
-                                                  usuario_responsable=asignacion.usuario_responsable,
                                                   fecha_inicio=inicio, fecha_termino=termino_original)
+            nueva.responsables.set(asignacion.responsables.all())
             auditoria.registrar(AccionAuditoria.ALTA, "asignacion_plan", nueva.pk, usuario=usuario,
                                 nuevos={**auditoria.instantanea(nueva), "reemplaza_a": asignacion.pk})
         return nuevo, True
@@ -419,10 +433,11 @@ def desactivar_plan(plan, usuario):
     return cerradas
 
 
-def asignar_plan(plan, material, responsable, fecha_inicio, usuario, fecha_termino=None):
+def asignar_plan(plan, material, responsables, fecha_inicio, usuario, fecha_termino=None):
     """CU-C3 Asignar plan a material. Devuelve la asignación y sus primeras revisiones."""
     from .programador import ProgramadorRevisiones
 
+    responsables = _validar_responsables(responsables)
     if not material.activo:
         raise ValidationError("Solo se asignan planes a elementos activos.")
     if not plan.activo or not plan.puntos.exists():
@@ -433,20 +448,69 @@ def asignar_plan(plan, material, responsable, fecha_inicio, usuario, fecha_termi
         raise ValidationError("La fecha de término no puede ser anterior a la de inicio.")
     try:
         with transaction.atomic():
-            asignacion = AsignacionPlan.objects.create(plan=plan, material=material, usuario_responsable=responsable,
-                                                       fecha_inicio=fecha_inicio, fecha_termino=fecha_termino)
+            asignacion = AsignacionPlan.objects.create(plan=plan, material=material, fecha_inicio=fecha_inicio,
+                                                       fecha_termino=fecha_termino)
+            asignacion.responsables.set(responsables)
             auditoria.registrar(AccionAuditoria.ALTA, "asignacion_plan", asignacion.pk, usuario=usuario,
-                                nuevos=auditoria.instantanea(asignacion))
-            notificaciones.notificar(
-                responsable, TipoNotificacion.ASIGNACION,
-                f"Se le asignó el plan «{plan.nombre}» ({plan.frecuencia_legible}) para {material.nombre} "
-                f"({material.codigo_institucional or 's/c'}). Primera revisión: {fecha_inicio:%d-%m-%Y}.",
-            )
+                                nuevos={**auditoria.instantanea(asignacion),
+                                        "id_usuarios_responsables": _ids(responsables)})
+            for responsable in responsables:
+                notificaciones.notificar(responsable, TipoNotificacion.ASIGNACION, _texto_asignacion(asignacion))
             creadas = ProgramadorRevisiones().generar_para(asignacion)
     except IntegrityError as error:
         # El índice único parcial impide dos asignaciones activas iguales (CU-C3 5.a).
         raise ValidationError("El elemento ya tiene este plan vigente.") from error
     return asignacion, creadas
+
+
+def _texto_asignacion(asignacion):
+    plan, material = asignacion.plan, asignacion.material
+    return (f"Se le asignó el plan «{plan.nombre}» ({plan.frecuencia_legible}) para {material.nombre} "
+            f"({material.codigo_institucional or 's/c'}). Primera revisión: {asignacion.fecha_inicio:%d-%m-%Y}.")
+
+
+@dataclass
+class ResultadoLote:
+    asignaciones: list = field(default_factory=list)
+    omitidas: list = field(default_factory=list)  # (plan, material) que ya estaban vigentes
+
+
+def asignar_en_lote(planes, materiales, responsables, fecha_inicio, usuario, fecha_termino=None):
+    """
+    Crea una asignación por cada plan en cada elemento, todas con los mismos responsables.
+    Lo que ya está vigente se omite; lo demás se confirma completo o no se confirma (RNF-08).
+    """
+    resultado = ResultadoLote()
+    with transaction.atomic():
+        for plan in planes:
+            for material in materiales:
+                if AsignacionPlan.objects.filter(material=material, plan=plan, activa=True).exists():
+                    resultado.omitidas.append((plan, material))
+                    continue
+                asignacion, _ = asignar_plan(plan, material, responsables, fecha_inicio, usuario, fecha_termino)
+                resultado.asignaciones.append(asignacion)
+    if not resultado.asignaciones:
+        raise ValidationError("Lo seleccionado ya está vigente.")
+    return resultado
+
+
+def cambiar_responsables(asignacion, responsables, usuario):
+    """Cambia quiénes están a cargo de una asignación vigente y de sus revisiones abiertas."""
+    if not asignacion.activa:
+        raise ErrorRevision("Solo se cambian los responsables de una asignación vigente.")
+    responsables = _validar_responsables(responsables)
+    anteriores = list(asignacion.responsables.all())
+    with transaction.atomic():
+        asignacion.responsables.set(responsables)
+        for revision in asignacion.revisiones.abiertas():
+            revision.responsables.set(responsables)
+        auditoria.registrar(AccionAuditoria.MODIFICACION, "asignacion_plan", asignacion.pk,
+                            {"id_usuarios_responsables": _ids(anteriores)},
+                            {"id_usuarios_responsables": _ids(responsables)}, usuario=usuario)
+        for responsable in responsables:
+            if responsable not in anteriores:
+                notificaciones.notificar(responsable, TipoNotificacion.ASIGNACION, _texto_asignacion(asignacion))
+    return asignacion
 
 
 def cerrar_asignacion(asignacion, usuario):

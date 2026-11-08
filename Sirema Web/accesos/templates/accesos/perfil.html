@@ -3,49 +3,45 @@
 {% block clase_contenido %}contenido-angosto{% endblock %}
 {% block contenido %}
 <div class="encabezado"><div><div class="ceja">{{ user.rol }}</div><h1>Mi perfil</h1></div></div>
-<div class="tarjeta">
-  <div class="d-flex align-items-center gap-3 mb-3">
-    {% if user.tiene_foto %}
-      <img class="avatar-img" src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="Foto de perfil de {{ user.nombre_completo }}" width="56" height="56" style="width:56px;height:56px">
-    {% else %}
-      <span class="avatar" style="width:56px;height:56px;font-size:1.1rem">{{ user.iniciales }}</span>
-    {% endif %}
-    <div><div class="fw-bold fs-5">{{ user.nombre_completo }}</div><div class="text-body-secondary">{{ user.correo }}</div></div>
-  </div>
-  <dl class="row lista-datos mb-0">
-    <dt class="col-sm-4">RUT</dt><dd class="col-sm-8">{{ user.rut }}</dd>
-    <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">{{ user.telefono|default:"—" }}</dd>
-    <dt class="col-sm-4">Rol</dt><dd class="col-sm-8">{{ user.rol }}</dd>
-    <dt class="col-sm-4">Último acceso</dt><dd class="col-sm-8">{{ user.last_login|date:"d-m-Y H:i"|default:"—" }}</dd>
-  </dl>
-</div>
-<div class="tarjeta">
-  <div class="tarjeta-titulo">Foto de perfil</div>
-  <p class="text-body-secondary">La imagen aparece junto a su nombre. Si no sube ninguna, se muestran sus iniciales.</p>
-  <form method="post" action="{% url 'accesos:foto_perfil_subir' %}" enctype="multipart/form-data" class="d-flex flex-column flex-sm-row align-items-sm-end gap-2">
-    {% csrf_token %}
-    <div class="flex-grow-1">
-      <label class="form-label" for="{{ form_foto.foto.id_for_label }}">{{ form_foto.foto.label }}</label>
-      {{ form_foto.foto }}
-      <div class="form-text">{{ form_foto.foto.help_text }}</div>
+<section class="credencial" aria-label="Credencial">
+  <header class="credencial-banda"><span>Bomba Huachipato</span><span class="cia">8ª Compañía</span></header>
+  <div class="credencial-cuerpo">
+    <div class="credencial-lado">
+      <form method="post" action="{% url 'accesos:foto_perfil_subir' %}" enctype="multipart/form-data">{% csrf_token %}
+        <label class="credencial-foto">
+          {% if user.tiene_foto %}
+            <img src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="Foto de {{ user.nombre_completo }}" width="184" height="184">
+          {% else %}
+            <span class="iniciales">{{ user.iniciales }}</span>
+          {% endif %}
+          <span class="credencial-cambiar"><i class="bi bi-camera" aria-hidden="true"></i> {% if user.tiene_foto %}Cambiar foto{% else %}Subir foto{% endif %}</span>
+          <input class="visually-hidden" type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-enviar-al-elegir>
+        </label>
+        <noscript><button class="btn btn-negro btn-sm mt-2" type="submit">Guardar foto</button></noscript>
+      </form>
+      {% if user.tiene_foto %}
+        <form method="post" action="{% url 'accesos:foto_perfil_eliminar' %}" data-confirmar="¿Quitar la foto?">{% csrf_token %}
+          <button type="submit" class="btn btn-link btn-sm mt-1">Quitar foto</button>
+        </form>
+      {% endif %}
     </div>
-    <button type="submit" class="btn btn-negro btn-touch"><i class="bi bi-upload" aria-hidden="true"></i> Guardar foto</button>
-  </form>
-  {% if user.tiene_foto %}
-    <form method="post" action="{% url 'accesos:foto_perfil_eliminar' %}" class="mt-2" data-confirmar="¿Quitar su foto de perfil?">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-outline-negro btn-sm btn-touch"><i class="bi bi-trash" aria-hidden="true"></i> Quitar foto actual</button>
-    </form>
-  {% endif %}
-</div>
-<div class="tarjeta">
-  <div class="tarjeta-titulo">Seguridad</div>
-  <p class="text-body-secondary">La sesión se cierra automáticamente tras {{ SIREMA_SESION_MINUTOS }} minutos sin actividad, y solo puede estar activa en un dispositivo a la vez: al ingresar en otro, la anterior se cierra.</p>
-  <a class="btn btn-negro btn-touch" href="{% url 'accesos:cambiar_contrasena' %}"><i class="bi bi-key" aria-hidden="true"></i> Cambiar contraseña</a>
-</div>
-<div class="tarjeta d-lg-none">
-  <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
-    <button class="btn btn-outline-negro btn-touch w-100" type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
-  </form>
-</div>
+    <div class="credencial-datos">
+      <h2>{{ user.nombre_completo }}</h2>
+      <dl class="lista-datos">
+        <dt>RUT</dt><dd class="mono">{{ user.rut }}</dd>
+        <dt>Correo</dt><dd>{{ user.correo }}</dd>
+        <dt>Teléfono</dt><dd>{{ user.telefono|default:"—" }}</dd>
+        <dt>Rol</dt><dd>{{ user.rol }}</dd>
+        <dt>Último acceso</dt><dd>{{ user.last_login|date:"d-m-Y H:i"|default:"—" }}</dd>
+      </dl>
+      <div class="credencial-acciones">
+        <a class="btn btn-sirema btn-touch" href="{% url 'accesos:perfil_editar' %}"><i class="bi bi-pencil" aria-hidden="true"></i> Editar datos</a>
+        <a class="btn btn-outline-negro btn-touch" href="{% url 'accesos:cambiar_contrasena' %}"><i class="bi bi-key" aria-hidden="true"></i> Contraseña</a>
+      </div>
+    </div>
+  </div>
+</section>
+<form class="d-lg-none mt-3" method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
+  <button class="btn btn-outline-negro btn-touch w-100" type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
+</form>
 {% endblock %}

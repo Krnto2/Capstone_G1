@@ -46,8 +46,7 @@ class FormularioMaterial(FormularioModelo):
             "cantidad": forms.NumberInput(attrs={"min": 1, "inputmode": "numeric"}),
         }
         help_texts = {
-            "codigo_institucional": "Obligatorio para el material unitario. No distingue mayúsculas.",
-            "numero_serie": "Opcional: no identifica al elemento.",
+            "codigo_institucional": "Obligatorio en material unitario.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -135,7 +134,7 @@ class FormularioBaja(Formulario):
                              widget=forms.TextInput(attrs={"placeholder": "Ej.: roto en emergencia"}))
     destino_final = forms.CharField(label="Destino final", max_length=100, required=False)
     confirmar = forms.BooleanField(
-        label="Entiendo que la baja cierra sus planes y deja no realizadas sus revisiones pendientes.")
+        label="Confirmo la baja: se cierran sus planes y sus revisiones pendientes.")
 
 
 class FormularioImportacion(Formulario):

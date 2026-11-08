@@ -15,9 +15,9 @@ pytestmark = pytest.mark.django_db
 
 def _revision(asignacion, responsable, dias_atras, estado, termino_dias_atras=None):
     programada = hoy() - timedelta(days=dias_atras)
-    revision = Revision.objects.create(asignacion=asignacion, usuario_responsable=responsable,
-                                       fecha_programada=programada, fecha_limite=programada + timedelta(days=1),
-                                       estado=estado)
+    revision = Revision.objects.create(asignacion=asignacion, fecha_programada=programada,
+                                       fecha_limite=programada + timedelta(days=1), estado=estado)
+    revision.responsables.add(responsable)
     if termino_dias_atras is not None:
         termino = datetime.combine(hoy() - timedelta(days=termino_dias_atras), time(10), timezone.get_current_timezone())
         Revision.objects.filter(pk=revision.pk).update(fecha_hora_inicio=termino, fecha_hora_termino=termino,

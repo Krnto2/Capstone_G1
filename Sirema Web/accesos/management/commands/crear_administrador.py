@@ -3,7 +3,7 @@ Crea el primer administrador del sistema.
 
 Uso:
     python manage.py crear_administrador --correo admin@octava.cl --rut 11.111.111-1 \
-        --nombre Ana --apellidos Pérez --contrasena Clave1234
+        --nombre Ana --apellidos Pérez --contrasena Clave1234!
 Sin argumentos toma SIREMA_ADMIN_CORREO, SIREMA_ADMIN_RUT, SIREMA_ADMIN_CONTRASENA
 del entorno (lo usa el contenedor en su primer arranque). Si ya existe un
 administrador activo no hace nada.

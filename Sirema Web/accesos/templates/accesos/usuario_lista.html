@@ -33,7 +33,7 @@
               <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item py-2" href="{% url 'accesos:usuario_editar' u.pk %}"><i class="bi bi-pencil"></i> Editar y asignar rol</a></li>
                 <li><a class="dropdown-item py-2" href="{% url 'accesos:usuario_contrasena' u.pk %}"><i class="bi bi-key"></i> Restablecer contraseña</a></li>
-                <li><form method="post" action="{% url 'accesos:usuario_estado' u.pk %}" data-confirmar="{% if u.activo %}¿Desactivar la cuenta de {{ u.nombre_completo }}? Conservará su historial.{% else %}¿Reactivar la cuenta de {{ u.nombre_completo }}?{% endif %}">{% csrf_token %}
+                <li><form method="post" action="{% url 'accesos:usuario_estado' u.pk %}" data-confirmar="{% if u.activo %}¿Desactivar la cuenta de {{ u.nombre_completo }}?{% else %}¿Reactivar la cuenta de {{ u.nombre_completo }}?{% endif %}">{% csrf_token %}
                   <button class="dropdown-item py-2" type="submit">{% if u.activo %}<i class="bi bi-person-x"></i> Desactivar{% else %}<i class="bi bi-person-check"></i> Reactivar{% endif %}</button></form></li>
               </ul>
             </div>

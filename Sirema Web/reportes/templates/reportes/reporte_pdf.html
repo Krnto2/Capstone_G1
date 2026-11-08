@@ -68,7 +68,7 @@
   <tbody>
   {% for r in revisiones %}
     <tr><td>{{ r.material.codigo_institucional|default:"s/c" }}</td><td>{{ r.material.nombre }}</td><td>{{ r.material.cajonera }}</td><td>{{ r.plan }}</td>
-      <td>{{ r.usuario_responsable.nombre_corto }}</td><td>{{ r.fecha_limite|date:"d-m-Y" }}</td><td>{{ r.get_estado_display }}</td>
+      <td>{{ r.responsables_cortos }}</td><td>{{ r.fecha_limite|date:"d-m-Y" }}</td><td>{{ r.get_estado_display }}</td>
       <td class="{% if r.resultado_global == 'falla' %}falla{% elif r.resultado_global == 'observacion' %}obs{% elif r.resultado_global %}ok{% endif %}">{{ r.get_resultado_global_display|default:"—" }}</td>
       <td>{% if r.fecha_hora_termino %}{{ r.fecha_hora_termino|date:"d-m-Y H:i" }}{% if r.en_plazo is False %} (fuera de plazo){% endif %}{% else %}—{% endif %}</td></tr>
   {% empty %}<tr><td colspan="9">Sin revisiones con fecha límite en el período.</td></tr>{% endfor %}

@@ -1,6 +1,7 @@
 """
-Módulo de revisiones: plan_revision, punto_control, asignacion_plan, revision,
-resultado_punto, fotografia, hallazgo y notificacion.
+Módulo de revisiones: plan_revision, punto_control, asignacion_plan,
+asignacion_responsable, revision, revision_responsable, resultado_punto,
+fotografia, hallazgo y notificacion.
 
 Cadena principal: material -> asignacion_plan -> revision -> resultado_punto ->
 fotografia. El único enlace con el inventario es asignacion_plan.id_material.
@@ -15,6 +16,21 @@ from django.utils import timezone
 from nucleo.enums import (CriticidadHallazgo, EstadoHallazgo, EstadoRevision, ResultadoControl, TipoDatoPunto,
                           TipoNotificacion, UnidadFrecuencia, restriccion_enum)
 from nucleo.utilidades import a_decimal, hoy, sumar_periodo
+
+
+class ConResponsables:
+    """Una tarea puede quedar a cargo de varios bomberos: cualquiera la ejecuta y basta una vez."""
+
+    @property
+    def responsables_cortos(self):
+        return ", ".join(u.nombre_corto for u in self.responsables.all())
+
+    @property
+    def responsables_completos(self):
+        return ", ".join(u.nombre_completo for u in self.responsables.all())
+
+    def es_responsable(self, usuario):
+        return any(u.pk == usuario.pk for u in self.responsables.all())
 
 
 class PlanRevision(models.Model):
@@ -131,8 +147,8 @@ class PuntoControl(models.Model):
         return ResultadoControl.CONFORME
 
 
-class AsignacionPlan(models.Model):
-    """Vínculo vigente entre un plan, un elemento del inventario y su responsable."""
+class AsignacionPlan(ConResponsables, models.Model):
+    """Vínculo vigente entre un plan, un elemento del inventario y sus responsables."""
 
     id = models.AutoField(primary_key=True, db_column="id_asignacion")
     plan = models.ForeignKey(PlanRevision, on_delete=models.RESTRICT, db_column="id_plan",
@@ -140,9 +156,8 @@ class AsignacionPlan(models.Model):
     # Enlace entre módulos: el elemento del inventario que será revisado.
     material = models.ForeignKey("inventario.Material", on_delete=models.RESTRICT, db_column="id_material",
                                  related_name="asignaciones")
-    usuario_responsable = models.ForeignKey("accesos.Usuario", on_delete=models.SET_NULL, null=True, blank=True,
-                                            db_column="id_usuario_responsable",
-                                            related_name="asignaciones_responsable", verbose_name="responsable")
+    responsables = models.ManyToManyField("accesos.Usuario", through="AsignacionResponsable",
+                                          related_name="asignaciones_responsable")
     fecha_inicio = models.DateField("fecha de inicio")
     fecha_termino = models.DateField("fecha de término", null=True, blank=True)
     activa = models.BooleanField(default=True)
@@ -167,32 +182,44 @@ class AsignacionPlan(models.Model):
         self.save(update_fields=["activa", "fecha_termino"])
 
 
+class AsignacionResponsable(models.Model):
+    """Bombero a cargo de una asignación (clave compuesta)."""
+
+    pk = models.CompositePrimaryKey("asignacion_id", "usuario_id")
+    asignacion = models.ForeignKey(AsignacionPlan, on_delete=models.CASCADE, db_column="id_asignacion",
+                                   related_name="+")
+    usuario = models.ForeignKey("accesos.Usuario", on_delete=models.CASCADE, db_column="id_usuario", related_name="+")
+
+    class Meta:
+        db_table = "asignacion_responsable"
+
+
 class RevisionQuerySet(models.QuerySet):
     ABIERTAS = (EstadoRevision.PENDIENTE, EstadoRevision.EN_CURSO, EstadoRevision.VENCIDA)
 
     def completa(self):
         return self.select_related("asignacion__plan", "asignacion__material__cajonera__unidad",
-                                   "asignacion__material__categoria", "usuario_responsable", "usuario_ejecutor")
+                                   "asignacion__material__categoria", "usuario_ejecutor").prefetch_related(
+            "responsables")
 
     def abiertas(self):
         return self.filter(estado__in=self.ABIERTAS)
 
     def pendientes_de(self, usuario):
-        return self.filter(usuario_responsable=usuario, estado__in=self.ABIERTAS)
+        return self.filter(responsables=usuario, estado__in=self.ABIERTAS)
 
     def por_urgencia(self):
         return self.order_by("fecha_limite", "fecha_programada", "id")
 
 
-class Revision(models.Model):
+class Revision(ConResponsables, models.Model):
     """Aplicación de un plan a un elemento en una fecha."""
 
     id = models.AutoField(primary_key=True, db_column="id_revision")
     asignacion = models.ForeignKey(AsignacionPlan, on_delete=models.RESTRICT, db_column="id_asignacion",
                                    related_name="revisiones")
-    usuario_responsable = models.ForeignKey("accesos.Usuario", on_delete=models.RESTRICT,
-                                            db_column="id_usuario_responsable",
-                                            related_name="revisiones_responsable", verbose_name="responsable")
+    responsables = models.ManyToManyField("accesos.Usuario", through="RevisionResponsable",
+                                          related_name="revisiones_responsable")
     usuario_ejecutor = models.ForeignKey("accesos.Usuario", on_delete=models.RESTRICT, null=True, blank=True,
                                          db_column="id_usuario_ejecutor", related_name="revisiones_ejecutadas")
     fecha_programada = models.DateField()
@@ -219,8 +246,7 @@ class Revision(models.Model):
             restriccion_enum("estado", EstadoRevision, "ck_revision_estado"),
             restriccion_enum("resultado_global", ResultadoControl, "ck_revision_resultado", nulo=True),
         ]
-        indexes = [models.Index(fields=["estado", "fecha_limite"], name="ix_revision_estado_limite"),
-                   models.Index(fields=["usuario_responsable", "estado"], name="ix_revision_responsable")]
+        indexes = [models.Index(fields=["estado", "fecha_limite"], name="ix_revision_estado_limite")]
 
     def __str__(self):
         return f"Revisión {self.material} · {self.fecha_programada:%d-%m-%Y}"
@@ -266,6 +292,17 @@ class Revision(models.Model):
         if ResultadoControl.OBSERVACION in valores:
             return ResultadoControl.OBSERVACION
         return ResultadoControl.CONFORME
+
+
+class RevisionResponsable(models.Model):
+    """Bombero a cargo de una revisión (clave compuesta)."""
+
+    pk = models.CompositePrimaryKey("revision_id", "usuario_id")
+    revision = models.ForeignKey(Revision, on_delete=models.CASCADE, db_column="id_revision", related_name="+")
+    usuario = models.ForeignKey("accesos.Usuario", on_delete=models.RESTRICT, db_column="id_usuario", related_name="+")
+
+    class Meta:
+        db_table = "revision_responsable"
 
 
 class ResultadoPunto(models.Model):

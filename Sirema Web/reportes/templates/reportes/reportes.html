@@ -22,7 +22,7 @@
       {% for r in revisiones %}
         <tr>
           <td class="ps-3"><a class="text-decoration-none text-reset" href="{% url 'revisiones:detalle' r.pk %}"><span class="mono fw-semibold">{{ r.material.codigo_institucional|default:"s/c" }}</span> {{ r.material.nombre }}</a></td>
-          <td>{{ r.material.cajonera }}</td><td>{{ r.plan }}</td><td>{{ r.usuario_responsable.nombre_corto }}</td>
+          <td>{{ r.material.cajonera }}</td><td>{{ r.plan }}</td><td>{{ r.responsables_cortos }}</td>
           <td>{{ r.fecha_limite|date:"d-m-Y" }}</td><td>{{ r.estado|badge_estado }}</td>
           <td>{% if r.resultado_global %}{{ r.resultado_global|badge_resultado }}{% else %}—{% endif %}</td>
           <td class="pe-3">{% if r.fecha_hora_termino %}{{ r.fecha_hora_termino|date:"d-m-Y H:i" }}{% if r.en_plazo is False %}<div class="small fecha-alerta">fuera de plazo</div>{% endif %}{% else %}—{% endif %}</td>

@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
@@ -8,6 +10,26 @@ from nucleo.utilidades import digito_verificador, formatear_rut, ip_cliente, lim
 
 from . import auditoria
 from .models import Rol, Usuario
+
+
+TELEFONO = re.compile(r"\+?[0-9][0-9 ]{7,14}")
+
+
+class ValidacionesUsuario:
+    """Reglas comunes al formulario del administrador y al del propio usuario."""
+
+    def clean_correo(self):
+        correo = self.cleaned_data["correo"].strip().lower()
+        existentes = Usuario.objects.filter(correo__iexact=correo).exclude(pk=self.instance.pk)
+        if existentes.exists():
+            raise forms.ValidationError("Ya existe un usuario con este correo.")
+        return correo
+
+    def clean_telefono(self):
+        telefono = (self.cleaned_data.get("telefono") or "").strip()
+        if telefono and not TELEFONO.fullmatch(telefono):
+            raise forms.ValidationError("Escriba un teléfono válido, por ejemplo +56 9 1234 5678.")
+        return telefono or None
 
 
 class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
@@ -21,10 +43,8 @@ class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
         widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
     )
     error_messages = {
-        "invalid_login": "Correo o contraseña incorrectos. Tras 5 intentos fallidos la cuenta "
-                         "se bloquea por 15 minutos.",
-        "inactive": "Su cuenta está deshabilitada. Comuníquese con el administrador de la compañía "
-                    "para reactivarla.",
+        "invalid_login": "Correo o contraseña incorrectos.",
+        "inactive": "Cuenta deshabilitada. Hable con el administrador.",
     }
 
     def confirm_login_allowed(self, user):
@@ -47,18 +67,24 @@ class FormularioRestablecerContrasena(FormularioBootstrap, SetPasswordForm):
 class FormularioFotoPerfil(Formulario):
     """CU-A2: el titular cambia su propia foto de perfil (RF-01)."""
 
-    foto = forms.ImageField(
-        label="Elija una imagen",
-        help_text="JPEG, PNG o WebP · hasta 10 MB. Se recorta y redimensiona automáticamente.",
-        error_messages={
-            "invalid_image": "El archivo no es una imagen válida. Use JPEG, PNG o WebP.",
-            "required": "Seleccione una imagen.",
-        },
-        widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
-    )
+    foto = forms.ImageField(error_messages={"invalid_image": "El archivo no es una imagen válida.",
+                                            "required": "Seleccione una imagen."})
 
 
-class FormularioUsuario(FormularioModelo):
+class FormularioPerfil(ValidacionesUsuario, FormularioModelo):
+    """CU-A2: el titular corrige sus propios datos."""
+
+    class Meta:
+        model = Usuario
+        fields = ["nombre", "apellidos", "correo", "telefono"]
+        widgets = {
+            "correo": forms.EmailInput(attrs={"inputmode": "email", "autocomplete": "email"}),
+            "telefono": forms.TextInput(attrs={"placeholder": "+56 9 1234 5678", "inputmode": "tel",
+                                               "autocomplete": "tel"}),
+        }
+
+
+class FormularioUsuario(ValidacionesUsuario, FormularioModelo):
     contrasena1 = forms.CharField(label="Contraseña inicial", strip=False, widget=forms.PasswordInput,
                                   help_text=password_validation.password_validators_help_text_html())
     contrasena2 = forms.CharField(label="Repita la contraseña", strip=False, widget=forms.PasswordInput)
@@ -79,8 +105,6 @@ class FormularioUsuario(FormularioModelo):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["rut"].help_text = ("Puede escribirlo con o sin puntos y guion; se formatea solo. "
-                                        "El dígito verificador debe ser correcto.")
         self.fields["rol"].queryset = Rol.objects.filter(activo=True)
         self.fields["rol"].empty_label = None
         if self.instance.pk:
@@ -96,13 +120,6 @@ class FormularioUsuario(FormularioModelo):
             raise forms.ValidationError(
                 f"El dígito verificador no corresponde: para {limpio[:-1]} debería terminar en «{correcto}».")
         return formatear_rut(limpio)
-
-    def clean_correo(self):
-        correo = self.cleaned_data["correo"].strip().lower()
-        existentes = Usuario.objects.filter(correo__iexact=correo).exclude(pk=self.instance.pk)
-        if existentes.exists():
-            raise forms.ValidationError("Ya existe un usuario con este correo.")
-        return correo
 
     def clean_rol(self):
         rol = self.cleaned_data["rol"]

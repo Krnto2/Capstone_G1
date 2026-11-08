@@ -21,10 +21,11 @@ def notificar(usuario, tipo, mensaje, revision=None, unica=False):
     return Notificacion.objects.create(usuario=usuario, tipo=tipo, mensaje=mensaje[:300], revision=revision)
 
 
-def notificar_jefatura(tipo, mensaje, revision=None, unica=False, excluir=None):
+def notificar_jefatura(tipo, mensaje, revision=None, unica=False, excluir=()):
     creadas = []
+    excluidos = {u.pk for u in excluir}
     for usuario in jefatura():
-        if excluir is not None and usuario.pk == excluir.pk:
+        if usuario.pk in excluidos:
             continue
         aviso = notificar(usuario, tipo, mensaje, revision, unica)
         if aviso:

@@ -7,7 +7,7 @@
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-sirema btn-touch" href="{% url 'revisiones:asignacion_crear' %}?plan={{ plan.pk }}"><i class="bi bi-link-45deg" aria-hidden="true"></i> Asignar a material</a>
     <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:plan_editar' plan.pk %}"><i class="bi bi-pencil" aria-hidden="true"></i> Modificar</a>
-    <form method="post" action="{% url 'revisiones:plan_desactivar' plan.pk %}" data-confirmar="¿Desactivar el plan? Se cerrarán sus {{ asignaciones|length }} asignaciones vigentes.">{% csrf_token %}
+    <form method="post" action="{% url 'revisiones:plan_desactivar' plan.pk %}" data-confirmar="¿Desactivar el plan?">{% csrf_token %}
       <button class="btn btn-outline-danger btn-touch" type="submit">Desactivar</button></form>
   </div>
   {% else %}<span class="badge-sirema estado-no-realizada">Inactivo</span>{% endif %}
@@ -44,7 +44,7 @@
       {% for a in asignaciones %}
         <div class="d-flex justify-content-between border-bottom py-2 gap-2">
           <div><a class="fw-semibold" href="{% url 'inventario:detalle' a.material.pk %}">{{ a.material }}</a>
-            <div class="small text-body-secondary">{{ a.material.cajonera }} · {{ a.usuario_responsable.nombre_corto|default:"sin responsable" }} · desde {{ a.fecha_inicio|date:"d-m-Y" }}</div></div>
+            <div class="small text-body-secondary">{{ a.material.cajonera }} · {{ a.responsables_cortos|default:"sin responsable" }} · desde {{ a.fecha_inicio|date:"d-m-Y" }}</div></div>
         </div>
       {% empty %}
         <p class="text-body-secondary mb-0">Ningún elemento tiene este plan.</p>

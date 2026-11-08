@@ -14,7 +14,7 @@
       <div class="col-12">{% campo form.nombre %}</div>
       <div class="col-md-6">{% campo form.categoria %}</div>
       {% if form.cajonera %}<div class="col-md-6">{% campo form.cajonera %}</div>
-      {% else %}<div class="col-md-6"><div class="mb-3"><span class="form-label d-block">Ubicación</span>{{ material.cajonera }}<div class="form-text">Para cambiarla, registre un <a href="{% url 'inventario:trasladar' material.pk %}">movimiento</a>.</div></div></div>{% endif %}
+      {% else %}<div class="col-md-6"><div class="mb-3"><span class="form-label d-block">Ubicación</span>{{ material.cajonera }}<div class="form-text"><a href="{% url 'inventario:trasladar' material.pk %}">Trasladar</a></div></div></div>{% endif %}
       <div class="col-md-4" data-solo-granel>{% campo form.cantidad %}</div>
       <div class="col-md-4">{% campo form.marca %}</div>
       <div class="col-md-4">{% campo form.modelo %}</div>

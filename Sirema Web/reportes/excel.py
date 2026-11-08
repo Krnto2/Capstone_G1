@@ -291,7 +291,7 @@ def exportar_xlsx(indicadores, revisiones):
         en_plazo = r.en_plazo
         filas_revisiones.append([
             material.codigo_institucional or "s/c", material.nombre, material.categoria.nombre, material.ubicacion,
-            str(r.plan), r.usuario_responsable.nombre_completo, _fecha(r.fecha_programada), _fecha(r.fecha_limite),
+            str(r.plan), r.responsables_completos, _fecha(r.fecha_programada), _fecha(r.fecha_limite),
             r.get_estado_display(), r.get_resultado_global_display() if r.resultado_global else "",
             r.usuario_ejecutor.nombre_completo if r.usuario_ejecutor else "", _fecha(r.fecha_hora_termino),
             "" if en_plazo is None else ("Sí" if en_plazo else "No"),

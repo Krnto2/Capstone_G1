@@ -33,7 +33,7 @@ def _fila(revision):
         material.categoria.nombre,
         material.ubicacion,
         str(revision.plan),
-        revision.usuario_responsable.nombre_completo,
+        revision.responsables_completos,
         revision.fecha_programada.strftime("%d-%m-%Y"),
         revision.fecha_limite.strftime("%d-%m-%Y"),
         revision.get_estado_display(),

@@ -27,7 +27,7 @@
           <td class="ps-3"><span class="mono fw-semibold">{{ r.material.codigo_institucional|default:"s/c" }}</span> {{ r.material.nombre }}</td>
           <td>{{ r.material.cajonera }}</td>
           <td>{{ r.plan }}</td>
-          <td>{{ r.usuario_responsable.nombre_corto }}</td>
+          <td>{{ r.responsables_cortos }}</td>
           <td class="{% if r.urgencia == 'vencida' %}fecha-falla{% endif %}">{{ r.fecha_limite|date:"d-m-Y" }}</td>
           <td>{{ r.estado|badge_estado }}</td>
           <td>{% if r.resultado_global %}{{ r.resultado_global|badge_resultado }}{% else %}—{% endif %}</td>

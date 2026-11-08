@@ -23,7 +23,7 @@
     <button class="btn btn-negro btn-touch" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Buscar</button>
     <a class="btn btn-link" href="{% url 'inventario:lista' %}">Limpiar filtros</a>
   </div>
-  {% if busqueda_corta %}<p class="small text-body-secondary mt-2 mb-0">Escriba al menos 2 caracteres para buscar por nombre o código.</p>{% endif %}
+  {% if busqueda_corta %}<p class="small text-body-secondary mt-2 mb-0">Escriba al menos 2 caracteres.</p>{% endif %}
 </form>
 <div id="resultados" aria-live="polite">
 

@@ -17,7 +17,7 @@ class TestCP01Usuarios:
     def _datos(self, **extra):
         datos = {"rut": "18.888.888-7", "nombre": "Luis", "apellidos": "Prueba", "correo": "luis@prueba.cl",
                  "telefono": "", "rol": Rol.objects.get(nombre=Rol.BOMBERO).pk,
-                 "contrasena1": "Clave1234x", "contrasena2": "Clave1234x"}
+                 "contrasena1": "Clave1234x!", "contrasena2": "Clave1234x!"}
         datos.update(extra)
         return datos
 
@@ -26,7 +26,7 @@ class TestCP01Usuarios:
         assert form.is_valid(), form.errors
         usuario = form.save()
         assert usuario.password.startswith("argon2")
-        assert usuario.check_password("Clave1234x")
+        assert usuario.check_password("Clave1234x!")
 
     def test_no_admite_rut_ni_correo_repetidos(self, bombero):
         form = FormularioUsuario(self._datos(rut=bombero.rut, correo=bombero.correo.upper()))
@@ -37,7 +37,7 @@ class TestCP01Usuarios:
         form = FormularioUsuario(self._datos(rut="18.888.888-0"))
         assert not form.is_valid() and "rut" in form.errors
 
-    def test_contrasena_debe_ser_alfanumerica_y_de_8_caracteres(self):
+    def test_contrasena_exige_mayuscula_numero_y_caracter_especial(self):
         assert "contrasena1" in FormularioUsuario(self._datos(contrasena1="abcdefgh", contrasena2="abcdefgh")).errors
         assert "contrasena1" in FormularioUsuario(self._datos(contrasena1="Ab1", contrasena2="Ab1")).errors
 
@@ -88,12 +88,14 @@ class TestCP02ControlDeAcceso:
     def test_cambio_de_contrasena_exige_la_actual(self, client, bombero):
         client.force_login(bombero)
         url = reverse("accesos:cambiar_contrasena")
-        mala = client.post(url, {"old_password": "otra", "new_password1": "Nueva2026x", "new_password2": "Nueva2026x"})
+        mala = client.post(url, {"old_password": "otra", "new_password1": "Nueva2026x!",
+                                 "new_password2": "Nueva2026x!"})
         assert mala.status_code == 200
-        buena = client.post(url, {"old_password": CLAVE, "new_password1": "Nueva2026x", "new_password2": "Nueva2026x"})
+        buena = client.post(url, {"old_password": CLAVE, "new_password1": "Nueva2026x!",
+                                  "new_password2": "Nueva2026x!"})
         assert buena.status_code == 302
         bombero.refresh_from_db()
-        assert bombero.check_password("Nueva2026x")
+        assert bombero.check_password("Nueva2026x!")
 
     def test_matriz_de_permisos_protege_al_administrador(self, client, administrador):
         client.force_login(administrador)
@@ -185,23 +187,37 @@ class TestCuentaDeshabilitada:
         assert respuesta.status_code == 302 and reverse("accesos:login") in respuesta.url
 
 
-class TestSesionUnica:
+class TestSesiones:
     def _ingresar(self, cliente, usuario):
         return cliente.post(reverse("accesos:login"), {"username": usuario.correo, "password": CLAVE})
 
-    def test_un_ingreso_nuevo_cierra_la_sesion_anterior(self, client, bombero):
+    def _tiene_sesion(self, cliente):
+        return cliente.get(reverse("revisiones:mis_revisiones")).status_code == 200
+
+    def test_varios_dispositivos_quedan_con_sesion_a_la_vez(self, client, bombero):
         otro_dispositivo = Client()
         self._ingresar(client, bombero)
         assert self._ingresar(otro_dispositivo, bombero).status_code == 302
-        assert otro_dispositivo.get(reverse("revisiones:mis_revisiones")).status_code == 200
-        respuesta = client.get(reverse("revisiones:mis_revisiones"))
-        assert respuesta.status_code == 302 and reverse("accesos:login") in respuesta.url
-        assert EventoAuditoria.objects.filter(usuario=bombero, datos_nuevos__reemplaza_sesion_anterior=True).exists()
+        assert self._tiene_sesion(client) and self._tiene_sesion(otro_dispositivo)
 
-    def test_cerrar_el_navegador_sin_salir_no_bloquea_el_reingreso(self, client, bombero):
+    def test_salir_en_un_dispositivo_no_cierra_el_otro(self, client, bombero):
+        otro_dispositivo = Client()
         self._ingresar(client, bombero)
-        client.cookies.clear()
-        assert self._ingresar(client, bombero).status_code == 302
+        self._ingresar(otro_dispositivo, bombero)
+        otro_dispositivo.post(reverse("accesos:logout"))
+        assert self._tiene_sesion(client) and not self._tiene_sesion(otro_dispositivo)
+
+    def test_la_sesion_sobrevive_al_cierre_del_navegador(self, client, bombero, settings):
+        cookie = self._ingresar(client, bombero).cookies[settings.SESSION_COOKIE_NAME]
+        assert cookie["max-age"] == settings.SIREMA_SESION_DIAS * 24 * 60 * 60 and cookie["expires"]
+
+    def test_cambiar_la_contrasena_cierra_los_demas_dispositivos(self, client, bombero):
+        otro_dispositivo = Client()
+        self._ingresar(client, bombero)
+        self._ingresar(otro_dispositivo, bombero)
+        client.post(reverse("accesos:cambiar_contrasena"), {
+            "old_password": CLAVE, "new_password1": "Cuartel8Nueva!", "new_password2": "Cuartel8Nueva!"})
+        assert self._tiene_sesion(client) and not self._tiene_sesion(otro_dispositivo)
 
 
 class TestRedireccionInterna:

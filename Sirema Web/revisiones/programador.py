@@ -49,9 +49,9 @@ class ProgramadorRevisiones:
         material = asignacion.material
         if not asignacion.activa or material.estado != EstadoMaterial.ACTIVO:
             return []
-        responsable = asignacion.usuario_responsable
-        if responsable is None:
-            log.warning("La asignación %s no tiene responsable; no se generan revisiones.", asignacion.pk)
+        responsables = list(asignacion.responsables.all())
+        if not responsables:
+            log.warning("La asignación %s no tiene responsables; no se generan revisiones.", asignacion.pk)
             return []
         plan = asignacion.plan
         hasta = self.horizonte
@@ -69,24 +69,27 @@ class ProgramadorRevisiones:
             try:
                 with transaction.atomic():
                     revision = Revision.objects.create(
-                        asignacion=asignacion, usuario_responsable=responsable, fecha_programada=fecha,
+                        asignacion=asignacion, fecha_programada=fecha,
                         fecha_limite=fecha + timedelta(days=plan.dias_tolerancia),
                     )
+                    revision.responsables.set(responsables)
                     auditoria.registrar(AccionAuditoria.ALTA, "revision", revision.pk, nuevos={
                         "id_asignacion": asignacion.pk, "fecha_programada": fecha,
-                        "fecha_limite": revision.fecha_limite, "id_usuario_responsable": responsable.pk})
+                        "fecha_limite": revision.fecha_limite,
+                        "id_usuarios_responsables": sorted(u.pk for u in responsables)})
             except IntegrityError:
                 continue  # otra ejecución la creó primero
             creadas.append(revision)
-            notificaciones.notificar(
-                responsable, TipoNotificacion.ASIGNACION,
-                f"Nueva revisión asignada: {notificaciones.describir(revision)}, "
-                f"fecha límite {revision.fecha_limite:%d-%m-%Y}.", revision, unica=True)
+            for responsable in responsables:
+                notificaciones.notificar(
+                    responsable, TipoNotificacion.ASIGNACION,
+                    f"Nueva revisión asignada: {notificaciones.describir(revision)}, "
+                    f"fecha límite {revision.fecha_limite:%d-%m-%Y}.", revision, unica=True)
         return creadas
 
     def generar_revisiones(self):
         asignaciones = AsignacionPlan.objects.filter(activa=True).select_related(
-            "plan", "material__cajonera__unidad", "usuario_responsable")
+            "plan", "material__cajonera__unidad").prefetch_related("responsables")
         return sum(len(self.generar_para(a)) for a in asignaciones)
 
     def marcar_vencidas(self):
@@ -104,6 +107,15 @@ class ProgramadorRevisiones:
             total += 1
         return total
 
+    @staticmethod
+    def _avisar(revision, tipo, mensaje):
+        """Avisa a cada responsable y, indicando quiénes son, a la jefatura."""
+        responsables = list(revision.responsables.all())
+        total = sum(bool(notificaciones.notificar(u, tipo, mensaje, revision, unica=True)) for u in responsables)
+        titulo = "Responsable" if len(responsables) == 1 else "Responsables"
+        return total + len(notificaciones.notificar_jefatura(
+            tipo, f"{mensaje} {titulo}: {revision.responsables_cortos}.", revision, unica=True, excluir=responsables))
+
     def emitir_avisos(self):
         """CU-C5: aviso 24 horas antes de la fecha límite y al vencer, con copia a la jefatura."""
         total = 0
@@ -113,20 +125,12 @@ class ProgramadorRevisiones:
         for revision in por_vencer:
             mensaje = (f"Recordatorio: la revisión de {notificaciones.describir(revision)} vence mañana "
                        f"({revision.fecha_limite:%d-%m-%Y}).")
-            total += bool(notificaciones.notificar(revision.usuario_responsable, TipoNotificacion.RECORDATORIO,
-                                                   mensaje, revision, unica=True))
-            total += len(notificaciones.notificar_jefatura(
-                TipoNotificacion.RECORDATORIO, f"{mensaje} Responsable: {revision.usuario_responsable.nombre_corto}.",
-                revision, unica=True, excluir=revision.usuario_responsable))
+            total += self._avisar(revision, TipoNotificacion.RECORDATORIO, mensaje)
 
         for revision in Revision.objects.completa().filter(estado=EstadoRevision.VENCIDA):
             mensaje = (f"La revisión de {notificaciones.describir(revision)} venció el "
                        f"{revision.fecha_limite:%d-%m-%Y}.")
-            total += bool(notificaciones.notificar(revision.usuario_responsable, TipoNotificacion.VENCIMIENTO,
-                                                   mensaje, revision, unica=True))
-            total += len(notificaciones.notificar_jefatura(
-                TipoNotificacion.VENCIMIENTO, f"{mensaje} Responsable: {revision.usuario_responsable.nombre_corto}.",
-                revision, unica=True, excluir=revision.usuario_responsable))
+            total += self._avisar(revision, TipoNotificacion.VENCIMIENTO, mensaje)
         return total
 
     def ejecutar(self):

@@ -2,7 +2,7 @@
   <div class="tarjeta-titulo">Planes y revisiones</div>
   {% for a in seccion.asignaciones %}
     <div class="d-flex justify-content-between gap-2 border-bottom pb-2 mb-2">
-      <div><div class="fw-semibold">{{ a.plan }}</div><div class="small text-body-secondary">{{ a.plan.frecuencia_legible|capfirst }} · responsable {{ a.usuario_responsable.nombre_corto|default:"—" }}</div></div>
+      <div><div class="fw-semibold">{{ a.plan }}</div><div class="small text-body-secondary">{{ a.plan.frecuencia_legible|capfirst }} · {{ a.responsables_cortos|default:"sin responsable" }}</div></div>
       <span class="badge-sirema estado-realizada align-self-start">Vigente</span>
     </div>
   {% empty %}

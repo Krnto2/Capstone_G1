@@ -13,8 +13,7 @@
 {% empty %}
   <div class="tarjeta vacio">
     <i class="bi bi-clipboard-check"></i>
-    {% if pestana == 'pendientes' %}No tiene revisiones pendientes. ¡Todo al día!{% elif pestana == 'vencidas' %}No tiene revisiones vencidas.{% else %}Aún no registra revisiones realizadas.{% endif %}
+    {% if pestana == 'pendientes' %}Sin pendientes{% elif pestana == 'vencidas' %}Sin vencidas{% else %}Sin realizadas{% endif %}
   </div>
 {% endfor %}
-<p class="text-center text-body-secondary small mt-2"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualizado {% now "H:i" %}</p>
 {% endblock %}

@@ -23,36 +23,31 @@
   <link rel="stylesheet" href="{% estatico 'css/sirema.css' %}">
   {% block estilos %}{% endblock %}
 </head>
-<body{% if user.is_authenticated %} data-sesion-minutos="{{ SIREMA_SESION_MINUTOS }}" data-url-logout="{% url 'accesos:logout' %}"{% endif %}>
+<body>
 <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
 {% block cuerpo %}
 <div class="app">
   <aside class="sidebar d-none d-lg-flex" aria-label="Menú principal">
     <a class="identidad" href="{% url 'inicio' %}">
       <img src="{% static 'img/logo-8-oscuro.png' %}" alt="Emblema de la Octava Compañía de Bomberos de Talcahuano" width="150" height="79">
-      <div class="nombre">Bomba Huachipato</div>
-      <div class="compania">8ª Compañía · Talcahuano</div>
-      <span class="sistema">SIREMA</span>
+      <span class="nombre">Bomba Huachipato</span>
+      <span class="compania">8ª Compañía · Talcahuano</span>
     </a>
     {% include "componentes/_navegacion.html" %}
     <div class="sidebar-pie">
-      <a href="{% url 'accesos:perfil' %}" class="avatar-enlace" aria-label="Mi perfil">
-        {% if user.tiene_foto %}
-          <img class="avatar-img" src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="" width="48" height="48" style="width:48px;height:48px">
-        {% else %}
-          <span class="avatar" style="width:48px;height:48px;font-size:1rem">{{ user.iniciales }}</span>
-        {% endif %}
+      <a href="{% url 'accesos:perfil' %}" class="ficha-usuario" aria-label="Mi perfil">
+        {% include "componentes/_avatar.html" %}
+        <span><span class="usuario">{{ user.nombre_completo }}</span><span class="rol">{{ user.rol }}</span></span>
       </a>
-      <div class="usuario">{{ user.nombre_completo }}</div>
-      <div class="rol">{{ user.rol }}</div>
-      <button type="button" class="btn-tema" data-cambiar-tema aria-pressed="false">
-        <i class="bi bi-moon-stars" aria-hidden="true"></i><i class="bi bi-sun" aria-hidden="true"></i>
-        <span class="texto-oscuro">Modo oscuro</span><span class="texto-claro">Modo claro</span>
-      </button>
-      <a href="{% url 'accesos:perfil' %}"><i class="bi bi-person-gear" aria-hidden="true"></i> Mi perfil</a>
-      <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
-        <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
-      </form>
+      <div class="acciones-pie">
+        <button type="button" class="btn-tema" data-cambiar-tema aria-pressed="false">
+          <i class="bi bi-moon-stars" aria-hidden="true"></i><i class="bi bi-sun" aria-hidden="true"></i>
+          <span class="texto-oscuro">Oscuro</span><span class="texto-claro">Claro</span>
+        </button>
+        <form method="post" action="{% url 'accesos:logout' %}">{% csrf_token %}
+          <button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button>
+        </form>
+      </div>
     </div>
   </aside>
 
@@ -70,7 +65,7 @@
           <i class="bi bi-bell" aria-hidden="true"></i>
           {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}
         </a>
-        <a class="avatar text-decoration-none" href="{% url 'accesos:perfil' %}" aria-label="Mi perfil">{% if user.tiene_foto %}<img class="avatar-img" src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="" width="38" height="38">{% else %}{{ user.iniciales }}{% endif %}</a>
+        <a class="text-decoration-none" href="{% url 'accesos:perfil' %}" aria-label="Mi perfil">{% include "componentes/_avatar.html" %}</a>
       </div>
     </header>
 

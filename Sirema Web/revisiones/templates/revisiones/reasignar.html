@@ -2,14 +2,14 @@
 {% block titulo %}Reasignar revisión{% endblock %}
 {% block clase_contenido %}contenido-angosto{% endblock %}
 {% block contenido %}
-<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:detalle' revision.pk %}">{{ revision }}</a></div><h1>Reasignar responsable</h1></div></div>
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:detalle' revision.pk %}">{{ revision }}</a></div><h1>Reasignar revisión</h1></div></div>
 <div class="tarjeta">
-  <p>Responsable actual: <strong>{{ revision.usuario_responsable.nombre_completo }}</strong> · fecha límite {{ revision.fecha_limite|date:"d-m-Y" }}</p>
+  <p>A cargo de: <strong>{{ revision.responsables_completos }}</strong> · fecha límite {{ revision.fecha_limite|date:"d-m-Y" }}</p>
   {% include "componentes/_errores_formulario.html" %}
   <form method="post" novalidate>{% csrf_token %}
-    {% campo form.responsable %}
+    {% include "componentes/_seleccion_multiple.html" with campo=form.responsables filtro="Nombre del bombero" %}
     <div class="d-flex gap-2 flex-wrap">
-      <button class="btn btn-sirema btn-touch" type="submit">Reasignar y notificar</button>
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar y notificar</button>
       <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:detalle' revision.pk %}">Cancelar</a>
     </div>
   </form>
