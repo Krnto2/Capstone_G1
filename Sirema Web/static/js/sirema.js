@@ -180,4 +180,134 @@
     form.addEventListener("change", actualizar);
     actualizar();
   });
+  // Borradores: lo escrito en un formulario queda en este dispositivo hasta enviarlo. Si el bombero sale
+  // de la página, recibe una llamada o el celular recarga la pestaña, al volver lo encuentra.
+  var Borradores = (function () {
+    var usuario = document.body.getAttribute("data-usuario");
+    var almacen = null;
+    try { almacen = window.localStorage; almacen.setItem("sirema-prueba", "1"); almacen.removeItem("sirema-prueba"); }
+    catch (e) { almacen = null; }
+    if (!usuario || !almacen) return null;
+    var prefijo = "sirema-borrador-" + usuario + "-";
+    var vigencia = 7 * 24 * 60 * 60 * 1000;
+    var saliendo = false;
+
+    function leer(clave) {
+      try {
+        var dato = JSON.parse(almacen.getItem(clave));
+        return dato && Date.now() - dato.t < vigencia ? dato.v : null;
+      } catch (e) { return null; }
+    }
+    function guardar(clave, valor) {
+      if (saliendo) return;
+      try { almacen.setItem(clave, JSON.stringify({ t: Date.now(), v: valor })); } catch (e) { /* sin espacio */ }
+    }
+    function borrar(clave) { try { almacen.removeItem(clave); } catch (e) { /* sin almacenamiento */ } }
+    function borrarTodos() {
+      saliendo = true;
+      Object.keys(almacen).forEach(function (k) { if (k.indexOf(prefijo) === 0) borrar(k); });
+    }
+    function aviso(alDescartar) {
+      var caja = document.createElement("div");
+      caja.className = "aviso-inline mb-3";
+      caja.setAttribute("role", "status");
+      caja.textContent = "Se recuperó lo que había escrito. ";
+      if (alDescartar) {
+        var boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "btn btn-link btn-sm p-0 align-baseline";
+        boton.textContent = "Descartar";
+        boton.addEventListener("click", function () { alDescartar(); caja.remove(); });
+        caja.appendChild(boton);
+      }
+      return caja;
+    }
+    // Quita los borradores vencidos de cualquier usuario.
+    Object.keys(almacen).forEach(function (k) { if (k.indexOf("sirema-borrador-") === 0 && !leer(k)) borrar(k); });
+    return { clave: function (sufijo) { return prefijo + sufijo; }, leer: leer, guardar: guardar, borrar: borrar,
+             borrarTodos: borrarTodos, aviso: aviso };
+  })();
+  window.SiremaBorradores = Borradores;
+
+  if (Borradores) {
+    var NO_SE_GUARDAN = ["hidden", "password", "file", "submit", "button", "reset", "image"];
+
+    var camposDe = function (form) {
+      return Array.prototype.filter.call(form.elements, function (c) {
+        return c.name && c.name !== "csrfmiddlewaretoken" && !c.disabled && NO_SE_GUARDAN.indexOf(c.type) === -1;
+      });
+    };
+    var valoresDe = function (form) {
+      var datos = {};
+      camposDe(form).forEach(function (c) {
+        if (c.type === "checkbox") {
+          datos[c.name] = datos[c.name] || [];
+          if (c.checked) datos[c.name].push(c.value);
+        } else if (c.type === "radio") {
+          if (!(c.name in datos)) datos[c.name] = "";
+          if (c.checked) datos[c.name] = c.value;
+        } else if (c.type === "select-multiple") {
+          datos[c.name] = Array.prototype.filter.call(c.options, function (o) { return o.selected; })
+            .map(function (o) { return o.value; });
+        } else {
+          datos[c.name] = c.value;
+        }
+      });
+      return datos;
+    };
+    var aplicarA = function (form, datos) {
+      camposDe(form).forEach(function (c) {
+        if (!(c.name in datos)) return;
+        var v = datos[c.name];
+        if (c.type === "checkbox") c.checked = v.indexOf(c.value) !== -1;
+        else if (c.type === "radio") c.checked = c.value === v;
+        else if (c.type === "select-multiple") Array.prototype.forEach.call(c.options, function (o) { o.selected = v.indexOf(o.value) !== -1; });
+        else c.value = v;
+        c.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    };
+
+    Array.prototype.filter.call(document.querySelectorAll("form"), function (form) {
+      return form.method === "post" && !form.hasAttribute("data-sin-borrador") &&
+        !form.querySelector("input[type=password], input[type=file]") && camposDe(form).length > 0;
+    }).forEach(function (form, indice) {
+      var clave = Borradores.clave(location.pathname + "#" + indice);
+      var inicial = JSON.stringify(valoresDe(form));
+      var temporizador;
+      form.setAttribute("data-borrador", clave);
+
+      function guardar() {
+        clearTimeout(temporizador);
+        if (form.hasAttribute("data-enviado")) return;
+        var actual = JSON.stringify(valoresDe(form));
+        if (actual === inicial) Borradores.borrar(clave);
+        else Borradores.guardar(clave, JSON.parse(actual));
+      }
+      function programar() { clearTimeout(temporizador); temporizador = setTimeout(guardar, 300); }
+
+      var guardado = Borradores.leer(clave);
+      if (guardado && JSON.stringify(guardado) !== inicial) {
+        var original = JSON.parse(inicial);
+        aplicarA(form, guardado);
+        form.insertBefore(Borradores.aviso(function () { aplicarA(form, original); Borradores.borrar(clave); }),
+                          form.firstChild);
+      }
+      form.addEventListener("input", programar);
+      form.addEventListener("change", programar);
+      window.addEventListener("pagehide", guardar);
+      document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") guardar(); });
+    });
+
+    // Al enviar se descarta el borrador, salvo sin conexión. Al cerrar sesión se borran todos los del usuario.
+    document.addEventListener("submit", function (evento) {
+      if (evento.defaultPrevented) return;
+      var form = evento.target;
+      if ((form.getAttribute("action") || "").indexOf("/accesos/salir/") !== -1) { Borradores.borrarTodos(); return; }
+      var clave = form.getAttribute("data-borrador");
+      if (clave && navigator.onLine !== false) {
+        form.setAttribute("data-enviado", "1");
+        Borradores.borrar(clave);
+      }
+    });
+  }
 })();

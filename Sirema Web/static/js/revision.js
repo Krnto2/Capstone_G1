@@ -88,6 +88,7 @@
           }
           mostrarEstado("ok", "Guardado " + json.guardado);
           actualizarProgreso(json);
+          marcarGuardado(idPunto, datos);
           return json;
         });
     }, function () {
@@ -204,6 +205,85 @@
         .then(function () { etiqueta.classList.remove("disabled"); entrada.value = ""; });
     });
   });
+
+  // ------------------------------------------------------------ borrador --
+  // Lo que se marca o se escribe y aún no llega al servidor queda en este dispositivo. Si el bombero
+  // sale de la página o lo llaman, al volver lo encuentra y se envía solo.
+  var borradores = window.SiremaBorradores;
+  var claveBorrador = borradores ? borradores.clave("revision-" + idRevision) : null;
+  var secciones = Array.prototype.slice.call(document.querySelectorAll(".punto[data-punto]"));
+  var enServidor = {};
+
+  function estadoDe(seccion) {
+    var obs = seccion.querySelector("[data-campo=observacion]");
+    return { resultado: seccion.dataset.resultado || "", valor: valorDe(seccion), observacion: obs ? obs.value.trim() : "" };
+  }
+
+  function guardarBorrador() {
+    if (!borradores) return;
+    var pendientes = {};
+    secciones.forEach(function (s) {
+      var actual = estadoDe(s);
+      if (JSON.stringify(actual) !== enServidor[s.dataset.punto]) pendientes[s.dataset.punto] = actual;
+    });
+    if (Object.keys(pendientes).length) borradores.guardar(claveBorrador, pendientes);
+    else borradores.borrar(claveBorrador);
+  }
+
+  function marcarGuardado(idPunto, datos) {
+    enServidor[idPunto] = JSON.stringify({ resultado: datos.resultado, valor: datos.valor, observacion: datos.observacion });
+    guardarBorrador();
+  }
+
+  function aplicarEstado(seccion, e) {
+    if (seccion.dataset.tipo === "booleano") {
+      seccion.querySelectorAll("input[data-campo=valor]").forEach(function (r) { r.checked = r.value === e.valor; });
+    } else {
+      var campo = seccion.querySelector("[data-campo=valor]");
+      if (campo) campo.value = e.valor;
+    }
+    var obs = seccion.querySelector("[data-campo=observacion]");
+    if (obs) obs.value = e.observacion;
+    seccion.dataset.resultado = e.resultado;
+    seccion.querySelectorAll(".btn-resultado").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.resultado === e.resultado ? "true" : "false");
+    });
+    var bloque = seccion.querySelector("[data-bloque-observacion]");
+    if (bloque) bloque.hidden = !e.observacion && (!e.resultado || e.resultado === "conforme");
+    var avisoRango = seccion.querySelector("[data-aviso-rango]");
+    if (avisoRango) {
+      var fuera = fueraDeRango(seccion, valorDe(seccion));
+      avisoRango.hidden = !fuera;
+      seccion.classList.toggle("alerta", fuera);
+    }
+  }
+
+  secciones.forEach(function (s) { enServidor[s.dataset.punto] = JSON.stringify(estadoDe(s)); });
+  var recuperado = borradores ? borradores.leer(claveBorrador) : null;
+  if (recuperado) {
+    var hubo = false;
+    Object.keys(recuperado).forEach(function (id) {
+      var seccion = document.getElementById("punto-" + id);
+      if (!seccion || JSON.stringify(recuperado[id]) === enServidor[id]) return;
+      hubo = true;
+      aplicarEstado(seccion, recuperado[id]);
+      if (recuperado[id].resultado) enviarPunto(seccion);
+    });
+    if (hubo) {
+      var cabecera = raiz.querySelector(".cabecera-revision");
+      raiz.insertBefore(borradores.aviso(null), cabecera ? cabecera.nextSibling : raiz.firstChild);
+    } else {
+      borradores.borrar(claveBorrador);
+    }
+  }
+
+  var temporizadorBorrador;
+  function programarBorrador() { clearTimeout(temporizadorBorrador); temporizadorBorrador = setTimeout(guardarBorrador, 300); }
+  raiz.addEventListener("input", programarBorrador);
+  raiz.addEventListener("change", programarBorrador);
+  raiz.addEventListener("click", programarBorrador);
+  window.addEventListener("pagehide", guardarBorrador);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") guardarBorrador(); });
 
   window.addEventListener("online", procesarCola);
   window.addEventListener("offline", function () { mostrarEstado("error", "Sin conexión"); });

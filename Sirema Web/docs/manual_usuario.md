@@ -32,6 +32,9 @@ la finalice.
 
 Una revisión finalizada no se puede modificar.
 
+Si sale de la página, contesta una llamada o el celular recarga la pestaña mientras escribe, al volver
+encontrará lo escrito. En las revisiones se envía solo; en los demás formularios puede descartarlo.
+
 **Inventario.** Busque por nombre o código (desde 2 caracteres) y filtre por unidad, cajonera,
 categoría o estado. En la ficha de cada elemento verá su historial completo. Con **Trasladar**
 registra un cambio de ubicación.
