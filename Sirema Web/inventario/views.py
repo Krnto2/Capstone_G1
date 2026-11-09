@@ -204,7 +204,8 @@ class ImportarView(PermisoRequeridoMixin, View):
         resultado = None
         if form.is_valid():
             try:
-                resultado = importacion.importar_planilla(form.cleaned_data["archivo"], request.user)
+                resultado = importacion.importar_planilla(form.cleaned_data["archivo"], request.user,
+                                                          crear_catalogos=form.cleaned_data["crear_catalogos"])
             except ValidationError as error:
                 form.add_error("archivo", error)
         return render(request, self.template_name, {"form": form, "resultado": resultado,

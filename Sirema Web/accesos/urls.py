@@ -20,4 +20,11 @@ urlpatterns = [
     path("usuarios/<int:pk>/contrasena/", views.UsuarioContrasenaView.as_view(), name="usuario_contrasena"),
     path("permisos/", views.PermisosRolView.as_view(), name="permisos"),
     path("bitacora/", views.BitacoraView.as_view(), name="bitacora"),
+    path("respaldos/", views.RespaldosView.as_view(), name="respaldos"),
+    path("respaldos/nuevo/", views.RespaldoCrearView.as_view(), name="respaldo_crear"),
+    path("respaldos/restaurar/", views.RespaldoRestaurarView.as_view(), name="respaldo_restaurar"),
+    path("respaldos/<str:carpeta>/<str:nombre>/descargar/", views.RespaldoDescargarView.as_view(),
+         name="respaldo_descargar"),
+    path("respaldos/<str:carpeta>/<str:nombre>/eliminar/", views.RespaldoEliminarView.as_view(),
+         name="respaldo_eliminar"),
 ]

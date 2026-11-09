@@ -3,12 +3,13 @@
 {% block contenido %}
 <div class="encabezado">
   <div><div class="ceja">{{ total_activos }} elementos activos</div><h1>Inventario</h1></div>
-  {% if 'material.registrar' in permisos %}
   <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-negro btn-touch" href="{% url 'reportes:inventario_xlsx' %}" title="Inventario activo: hoja general y una hoja por carro, por cajonera"><i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Exportar Excel</a>
+    {% if 'material.registrar' in permisos %}
     <a class="btn btn-outline-negro btn-touch" href="{% url 'inventario:importar' %}"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> Carga masiva</a>
     <a class="btn btn-sirema btn-touch" href="{% url 'inventario:crear' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar material</a>
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 <form class="tarjeta mb-3" method="get" role="search" data-busqueda-en-vivo data-resultados="#resultados">

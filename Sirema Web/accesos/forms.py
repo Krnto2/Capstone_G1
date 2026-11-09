@@ -174,3 +174,39 @@ class FiltroBitacora(Formulario):
                               widget=forms.TextInput(attrs={"placeholder": "material, revision…"}))
     desde = forms.DateField(label="Desde", required=False, widget=CampoFecha())
     hasta = forms.DateField(label="Hasta", required=False, widget=CampoFecha())
+
+
+class FormularioRestaurarRespaldo(Formulario):
+    """Restaurar un respaldo: archivo subido o uno guardado en el servidor, con doble confirmación."""
+
+    archivo = forms.FileField(label="Archivo de respaldo (.zip)", required=False,
+                              widget=forms.FileInput(attrs={"accept": ".zip,application/zip"}))
+    origen = forms.CharField(required=False, widget=forms.HiddenInput)
+    contrasena = forms.CharField(label="Su contraseña", strip=False,
+                                 widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}))
+    confirmacion = forms.CharField(label="Escriba RESTAURAR para confirmar", max_length=20,
+                                   widget=forms.TextInput(attrs={"autocomplete": "off"}))
+
+    def __init__(self, *args, usuario=None, **kwargs):
+        self.usuario = usuario
+        super().__init__(*args, **kwargs)
+
+    def clean_contrasena(self):
+        contrasena = self.cleaned_data["contrasena"]
+        if not self.usuario or not self.usuario.check_password(contrasena):
+            raise forms.ValidationError("La contraseña no es correcta.")
+        return contrasena
+
+    def clean_confirmacion(self):
+        if self.cleaned_data["confirmacion"].strip() != "RESTAURAR":
+            raise forms.ValidationError("Escriba RESTAURAR, en mayúsculas, para confirmar.")
+        return "RESTAURAR"
+
+    def clean(self):
+        datos = super().clean()
+        archivo, origen = datos.get("archivo"), (datos.get("origen") or "").strip()
+        if not archivo and not origen:
+            raise forms.ValidationError("Seleccione el archivo de respaldo que desea restaurar.")
+        if archivo and not archivo.name.lower().endswith(".zip"):
+            self.add_error("archivo", "El respaldo debe ser un archivo .zip generado por SIREMA.")
+        return datos

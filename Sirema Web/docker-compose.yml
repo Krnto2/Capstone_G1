@@ -40,6 +40,8 @@ services:
     volumes:
       - media:/media
       - static:/static
+      # El administrador genera, descarga y restaura respaldos desde la web.
+      - respaldos:/respaldos
     depends_on:
       sirema-db:
         condition: service_healthy

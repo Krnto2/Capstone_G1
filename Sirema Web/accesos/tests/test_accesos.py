@@ -102,7 +102,7 @@ class TestCP02ControlDeAcceso:
         client.post(reverse("accesos:permisos"), {})  # desmarca todo
         admin = Rol.objects.get(nombre=Rol.ADMINISTRADOR)
         codigos = set(RolPermiso.objects.filter(rol=admin).values_list("permiso__codigo", flat=True))
-        assert codigos == {"usuario.administrar", "permiso.administrar"}
+        assert codigos == {"usuario.administrar", "permiso.administrar", "respaldo.administrar"}
         assert EventoAuditoria.objects.filter(entidad_afectada="rol_permiso").exists()
 
 

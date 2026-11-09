@@ -96,3 +96,39 @@ class TestExcelConIdentidad:
         assert isinstance(revisiones["H8"].value, datetime.datetime)  # fecha límite como fecha de Excel
         hallazgos = libro["Hallazgos abiertos"]
         assert hallazgos["E8"].value == "Alta" and hallazgos["E8"].fill.fgColor.rgb.endswith("B4161C")
+
+
+class TestExportarInventarioXlsx:
+    def test_hoja_general_y_una_hoja_por_unidad_seccionada_por_cajonera(self, client, bombero, catalogo, material):
+        import io
+
+        from openpyxl import load_workbook
+
+        from inventario.models import Material
+
+        Material.objects.create(nombre="Guantes", categoria=material.categoria, cajonera=catalogo["h8_caj3"],
+                                tipo="granel", cantidad=20)
+        client.force_login(bombero)
+        respuesta = client.get(reverse("reportes:inventario_xlsx"))
+        assert respuesta.status_code == 200
+        libro = load_workbook(io.BytesIO(respuesta.content))
+        assert libro.sheetnames == ["Inventario general", "B-8", "H-8"]
+        general = [c for fila in libro["Inventario general"].iter_rows(values_only=True) for c in fila if c]
+        assert "RESUMEN POR UNIDAD" in general and "PIEZAS POR CATEGORÍA Y UNIDAD" in general
+        assert "Guantes" in general and material.nombre in general
+        h8 = [c for fila in libro["H-8"].iter_rows(values_only=True) for c in fila if c]
+        assert any(str(c).startswith("CAJONERA 3") for c in h8) and "Guantes" in h8
+        assert material.nombre not in h8
+        b8 = [c for fila in libro["B-8"].iter_rows(values_only=True) for c in fila if c]
+        assert "Sin material en esta cajonera." in b8  # cajonera vacía también aparece
+
+    def test_excluye_material_dado_de_baja(self, client, jefatura, material):
+        import io
+
+        from openpyxl import load_workbook
+
+        material.dar_de_baja("Roto", jefatura)
+        client.force_login(jefatura)
+        libro = load_workbook(io.BytesIO(client.get(reverse("reportes:inventario_xlsx")).content))
+        valores = [c for h in libro for fila in h.iter_rows(values_only=True) for c in fila if c]
+        assert material.nombre not in valores

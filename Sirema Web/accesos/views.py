@@ -1,30 +1,36 @@
+import tempfile
 from datetime import datetime, time
+from pathlib import Path
 
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.sessions.models import Session
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Q, Value
 from django.db.models.functions import Replace, Upper
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, FormView, ListView, TemplateView, UpdateView
 
+from nucleo import respaldos
 from nucleo.almacenamiento import ErrorAlmacenamiento, foto_de_perfil
 from nucleo.enums import AccionAuditoria
-from nucleo.utilidades import limpiar_rut
+from nucleo.utilidades import ip_cliente, limpiar_rut
 
 from . import auditoria, demo
 from .forms import (FiltroBitacora, FiltroUsuarios, FormularioCambioContrasena, FormularioFotoPerfil,
-                    FormularioIngreso, FormularioPerfil, FormularioRestablecerContrasena, FormularioUsuario)
+                    FormularioIngreso, FormularioPerfil, FormularioRestablecerContrasena,
+                    FormularioRestaurarRespaldo, FormularioUsuario)
 from .models import EventoAuditoria, FotoPerfil, Permiso, Rol, RolPermiso, Usuario
 from .permisos import PermisoRequeridoMixin
 
 # Permisos que el rol administrador conserva siempre, para no perder el acceso.
-PERMISOS_PROTEGIDOS_ADMIN = {"usuario.administrar", "permiso.administrar"}
+PERMISOS_PROTEGIDOS_ADMIN = {"usuario.administrar", "permiso.administrar", "respaldo.administrar"}
 
 
 class IngresarView(auth_views.LoginView):
@@ -350,3 +356,105 @@ class BitacoraView(PermisoRequeridoMixin, ListView):
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(filtro=self.filtro, **kwargs)
+
+
+# ------------------------------------------------------------- Respaldos ----
+
+class RespaldosView(PermisoRequeridoMixin, View):
+    """RNF-05: el administrador genera, descarga y restaura respaldos completos."""
+
+    permiso_requerido = "respaldo.administrar"
+    template_name = "accesos/respaldos.html"
+
+    def get(self, request):
+        return self.pantalla(request, FormularioRestaurarRespaldo(usuario=request.user))
+
+    @classmethod
+    def pantalla(cls, request, form, status=200):
+        return render(request, cls.template_name, {"respaldos": respaldos.listar(), "form": form}, status=status)
+
+
+class RespaldoCrearView(PermisoRequeridoMixin, View):
+    permiso_requerido = "respaldo.administrar"
+
+    def post(self, request):
+        try:
+            ruta = respaldos.crear_respaldo("manuales")
+        except respaldos.ErrorRespaldo as exc:
+            messages.error(request, f"No se pudo generar el respaldo. {exc}")
+            return redirect("accesos:respaldos")
+        auditoria.registrar(AccionAuditoria.ALTA, "respaldo", ruta.name, nuevos={"bytes": ruta.stat().st_size})
+        messages.success(request, f"Respaldo {ruta.name} generado. Descárguelo y guárdelo fuera del servidor.")
+        return redirect("accesos:respaldos")
+
+
+class RespaldoDescargarView(PermisoRequeridoMixin, View):
+    permiso_requerido = "respaldo.administrar"
+
+    def get(self, request, carpeta, nombre):
+        try:
+            ruta = respaldos.obtener(carpeta, nombre)
+        except respaldos.ErrorRespaldo:
+            raise Http404("Respaldo no encontrado.")
+        auditoria.registrar(AccionAuditoria.ACCESO, "respaldo", nombre, nuevos={"evento": "descarga"})
+        return FileResponse(ruta.open("rb"), as_attachment=True, filename=nombre, content_type="application/zip")
+
+
+class RespaldoEliminarView(PermisoRequeridoMixin, View):
+    permiso_requerido = "respaldo.administrar"
+
+    def post(self, request, carpeta, nombre):
+        try:
+            respaldos.eliminar(carpeta, nombre)
+        except respaldos.ErrorRespaldo:
+            raise Http404("Respaldo no encontrado.")
+        auditoria.registrar(AccionAuditoria.BAJA, "respaldo", nombre, anteriores={"carpeta": carpeta})
+        messages.success(request, f"Respaldo {nombre} eliminado.")
+        return redirect("accesos:respaldos")
+
+
+class RespaldoRestaurarView(PermisoRequeridoMixin, View):
+    """Reemplaza todos los datos por los del respaldo. Antes guarda una copia del estado actual."""
+
+    permiso_requerido = "respaldo.administrar"
+
+    def post(self, request):
+        form = FormularioRestaurarRespaldo(request.POST, request.FILES, usuario=request.user)
+        if not form.is_valid():
+            return RespaldosView.pantalla(request, form, status=400)
+        correo, ip = request.user.correo, ip_cliente(request)
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                ruta, nombre = self._archivo(form, Path(tmp))
+                respaldos.leer_manifiesto(ruta)
+                copia = respaldos.crear_respaldo("manuales", "antes_de_restaurar")
+                manifiesto = respaldos.restaurar(ruta)
+            except respaldos.ErrorRespaldo as exc:
+                form.add_error(None, str(exc))
+                return RespaldosView.pantalla(request, form, status=400)
+
+        # La base restaurada trae sus propias sesiones: se cierran todas, también la actual.
+        Session.objects.all().delete()
+        usuario = Usuario.objects.filter(correo__iexact=correo).first() or auditoria.usuario_sistema()
+        auditoria.registrar(AccionAuditoria.MODIFICACION, "respaldo", nombre, usuario=usuario, ip=ip,
+                            anteriores={"copia_previa": copia.name},
+                            nuevos={"evento": "restauracion", "creado": manifiesto["creado"],
+                                    "version": manifiesto["version"]})
+        request.session.flush()
+        request.user = AnonymousUser()
+        fecha = manifiesto["creado"][:16].replace("T", " ")
+        messages.success(request, f"Datos restaurados desde el respaldo del {fecha}. Se guardó una copia del estado "
+                                  f"anterior ({copia.name}). Ingrese nuevamente.")
+        return redirect("accesos:login")
+
+    @staticmethod
+    def _archivo(form, tmp):
+        subido = form.cleaned_data.get("archivo")
+        if subido:
+            destino = tmp / "subido.zip"
+            with destino.open("wb") as salida:
+                for trozo in subido.chunks():
+                    salida.write(trozo)
+            return destino, Path(subido.name).name[:40]
+        carpeta, _, nombre = form.cleaned_data["origen"].partition("/")
+        return respaldos.obtener(carpeta, nombre), nombre

@@ -27,7 +27,7 @@
   <a class="nav-link {% nav_activo 'revisiones:notificaciones' %}" href="{% url 'revisiones:notificaciones' %}"><i class="bi bi-bell" aria-hidden="true"></i>Notificaciones
     {% if notificaciones_no_leidas %}<span class="contador contador-info">{{ notificaciones_no_leidas }}</span>{% endif %}</a>
 
-  {% if 'usuario.administrar' in permisos or 'catalogo.administrar' in permisos or 'auditoria.consultar' in permisos %}
+  {% if 'usuario.administrar' in permisos or 'catalogo.administrar' in permisos or 'auditoria.consultar' in permisos or 'respaldo.administrar' in permisos %}
     <div class="titulo-seccion">Administración</div>
     {% if 'usuario.administrar' in permisos %}
       <a class="nav-link {% nav_activo 'accesos:usuarios,accesos:usuario_crear,accesos:usuario_editar,accesos:usuario_contrasena' %}" href="{% url 'accesos:usuarios' %}"><i class="bi bi-people" aria-hidden="true"></i>Usuarios</a>
@@ -41,6 +41,9 @@
     {% endif %}
     {% if 'auditoria.consultar' in permisos %}
       <a class="nav-link {% nav_activo 'accesos:bitacora' %}" href="{% url 'accesos:bitacora' %}"><i class="bi bi-journal-text" aria-hidden="true"></i>Bitácora</a>
+    {% endif %}
+    {% if 'respaldo.administrar' in permisos %}
+      <a class="nav-link {% nav_activo 'accesos:respaldos' %}" href="{% url 'accesos:respaldos' %}"><i class="bi bi-archive" aria-hidden="true"></i>Respaldos</a>
     {% endif %}
   {% endif %}
 </nav>

@@ -6,8 +6,21 @@ from accesos.permisos import PermisoRequeridoMixin
 from inventario.models import Categoria, Unidad
 from nucleo.utilidades import hoy, nombre_mes, sumar_meses
 
-from . import exportacion
+from . import exportacion, inventario_xlsx
 from .indicadores import Filtros, ServicioReportes
+
+
+class InventarioXlsxView(PermisoRequeridoMixin, View):
+    """Inventario actual en Excel: hoja general y una hoja por unidad, seccionada por cajonera."""
+
+    permiso_requerido = "material.consultar"
+
+    def get(self, request):
+        respuesta = HttpResponse(
+            inventario_xlsx.exportar_inventario_xlsx(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        respuesta["Content-Disposition"] = f'attachment; filename="{inventario_xlsx.nombre_archivo()}"'
+        return respuesta
 
 
 def opciones_periodo(cantidad=13):

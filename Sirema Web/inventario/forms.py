@@ -140,6 +140,9 @@ class FormularioBaja(Formulario):
 class FormularioImportacion(Formulario):
     archivo = forms.FileField(label="Planilla CSV o XLSX",
                               widget=forms.ClearableFileInput(attrs={"accept": ".csv,.xlsx"}))
+    crear_catalogos = forms.BooleanField(
+        label="Crear las categorías, unidades y cajoneras que no existan", required=False, initial=True,
+        help_text="Útil para migrar el inventario anterior. Sin marcar, esas filas se rechazan.")
 
 
 class FormularioUnidad(FormularioModelo):

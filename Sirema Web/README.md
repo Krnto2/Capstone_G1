@@ -124,20 +124,31 @@ compañía, y acceda a `https://sirema.local` (o a la IP del servidor).
 
 ### Respaldos y restauración (RNF-05)
 
-`respaldo_diario` guarda cada día `sirema.dump` (pg_dump) y `media.tar.gz` en el volumen `respaldos`.
-Conserva 30 diarios y 12 mensuales. Para la copia semanal externa, copie la carpeta más reciente a un disco:
+Cada respaldo es un único `.zip` (`nucleo/respaldos.py`) con `manifiesto.json`, la base completa
+(`base/sirema.dump` de pg_dump, o `base/db.sqlite3` en desarrollo) y las fotografías (`media/`).
+`respaldo_diario` genera uno cada día en el volumen `respaldos` y conserva 30 diarios y 12 mensuales.
+
+**Desde la web (Administración › Respaldos, permiso `respaldo.administrar`, solo administrador):**
+
+- *Generar respaldo*: crea un respaldo manual en el momento.
+- *Descargar*: baja el `.zip` (manual, diario o mensual) para guardarlo fuera del servidor.
+- *Restaurar*: sube un `.zip` descargado antes, o elige uno de la lista. Pide la contraseña y escribir
+  `RESTAURAR`. Antes de reemplazar los datos guarda una copia del estado actual (`…_antes_de_restaurar.zip`),
+  aplica las migraciones si el respaldo es de una versión anterior y cierra todas las sesiones.
+  En PostgreSQL la carga es en una sola transacción: si falla, la base no cambia.
+  Solo acepta respaldos del mismo motor (PostgreSQL ↔ PostgreSQL, SQLite ↔ SQLite).
+
+**Desde la consola** (si la web no está disponible):
 
 ```bash
-docker compose cp sirema-scheduler:/respaldos/diarios /ruta/al/disco/sirema-$(date +%Y%m%d)
+docker compose cp sirema_20261108_030000.zip sirema-web:/tmp/r.zip
+docker compose exec sirema-web python manage.py restaurar_respaldo /tmp/r.zip
 ```
 
-Restauración:
+Copia semanal externa:
 
 ```bash
-docker compose cp respaldo/sirema.dump sirema-db:/tmp/sirema.dump
-docker compose exec sirema-db pg_restore -U sirema -d sirema --clean --if-exists /tmp/sirema.dump
-docker compose cp respaldo/media.tar.gz sirema-web:/tmp/media.tar.gz
-docker compose exec sirema-web tar -xzf /tmp/media.tar.gz -C /
+docker compose cp sirema-web:/respaldos/diarios /ruta/al/disco/sirema-$(date +%Y%m%d)
 ```
 
 ## 3. Pruebas automatizadas (RNF-07)

@@ -111,3 +111,55 @@ class TestCP06Movimientos:
         client.force_login(administrador)
         client.post(reverse("inventario:eliminar", args=["cajonera", material.cajonera_id]))
         assert material.cajonera.__class__.objects.filter(pk=material.cajonera_id).exists()
+
+
+class TestCargaMasivaCreaCatalogos:
+    def _cargar(self, contenido, usuario, **kwargs):
+        return importacion.importar_planilla(SimpleUploadedFile("carga.csv", contenido.encode("utf-8")), usuario,
+                                             **kwargs)
+
+    def test_crea_categorias_unidades_y_cajoneras_que_faltan(self, catalogo, jefatura):
+        from inventario.models import Cajonera, Categoria, Unidad
+
+        contenido = ("codigo;nombre;categoria;unidad;cajonera;tipo;cantidad\n"
+                     "8C-0300;Botella ERA;Respiración;B-8;CABINA TRIPULACION;unitario;1\n"
+                     "8C-0301;Máscara ERA;RESPIRACION;b-8;Cabina  Tripulación;unitario;1\n"
+                     ";Vendas;Primeros auxilios;BX-8;Cajonera 1;granel;10\n"
+                     "8C-0302;Llave;Herramientas;B-8;Cajonera 2;unitario;1\n")
+        resultado = self._cargar(contenido, jefatura)
+        assert len(resultado.registrados) == 4 and not resultado.rechazados
+        # Sin duplicar por mayúsculas, tildes ni espacios repetidos
+        assert Categoria.objects.filter(nombre__iexact="respiración").count() == 1
+        assert Cajonera.objects.filter(unidad__codigo="B-8", nombre__icontains="tripula").count() == 1
+        assert Unidad.objects.filter(codigo="BX-8").exists()
+        assert resultado.unidades_creadas == ["BX-8"]
+        assert sorted(resultado.categorias_creadas) == ["Herramientas", "Primeros auxilios", "Respiración"]
+        assert resultado.cajoneras_creadas == ["B-8 / CABINA TRIPULACION", "BX-8 / Cajonera 1"]
+        assert EventoAuditoria.objects.filter(entidad_afectada="cajonera", accion="alta").count() == 2
+
+    def test_fila_rechazada_no_deja_catalogos_creados(self, catalogo, jefatura):
+        from inventario.models import Categoria, Unidad
+
+        contenido = ("codigo;nombre;categoria;unidad;cajonera;tipo\n"
+                     ";Sin código;Nueva categoría;NUEVA;Caj 1;unitario\n")
+        resultado = self._cargar(contenido, jefatura)
+        assert [r["fila"] for r in resultado.rechazados] == [2]
+        assert not Categoria.objects.filter(nombre="Nueva categoría").exists()
+        assert not Unidad.objects.filter(codigo="NUEVA").exists()
+        assert resultado.catalogos_creados == 0
+
+    def test_sin_la_opcion_rechaza_catalogos_inexistentes(self, catalogo, jefatura):
+        contenido = ("codigo;nombre;categoria;unidad;cajonera;tipo\n"
+                     "8C-0400;Hacha;Herramientas;B-8;Cabina;unitario\n")
+        resultado = self._cargar(contenido, jefatura, crear_catalogos=False)
+        motivos = resultado.rechazados[0]["motivos"]
+        assert "la categoría «Herramientas» no existe" in motivos
+        assert "la cajonera «B-8 / Cabina» no existe" in motivos
+
+    def test_la_vista_crea_catalogos_por_defecto(self, client, catalogo, jefatura):
+        client.force_login(jefatura)
+        contenido = "codigo;nombre;categoria;unidad;cajonera;tipo\n8C-0500;Tablet;Comunicaciones;B-8;Cabina;unitario\n"
+        respuesta = client.post(reverse("inventario:importar"), {
+            "archivo": SimpleUploadedFile("carga.csv", contenido.encode()), "crear_catalogos": "on"})
+        assert respuesta.context["resultado"].catalogos_creados == 2
+        assert Material.objects.filter(codigo_institucional="8C-0500").exists()

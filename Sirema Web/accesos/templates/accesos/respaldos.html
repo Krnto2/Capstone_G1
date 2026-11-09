@@ -1,0 +1,79 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Respaldos{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">Administración</div><h1>Respaldos</h1></div>
+  <form method="post" action="{% url 'accesos:respaldo_crear' %}" data-confirmar="¿Generar ahora un respaldo completo de la base de datos y las fotografías?">{% csrf_token %}
+    <button class="btn btn-sirema btn-touch" type="submit"><i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Generar respaldo</button>
+  </form>
+</div>
+
+<p class="text-body-secondary">
+  Cada respaldo es un archivo <span class="mono">.zip</span> con toda la base de datos (usuarios, inventario, planes,
+  revisiones, hallazgos y bitácora) y las fotografías de evidencia. El servidor genera uno automático cada día a las 03:00.
+  Descargue los respaldos y guárdelos fuera del servidor.
+</p>
+
+<div class="tarjeta tarjeta-lista mb-4">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Fecha</th><th>Tipo</th><th class="d-none d-md-table-cell">Archivo</th><th>Tamaño</th><th class="pe-3 text-end">Acciones</th></tr></thead>
+      <tbody>
+      {% for r in respaldos %}
+        <tr>
+          <td class="ps-3 text-nowrap">{{ r.fecha|date:"d-m-Y H:i" }}</td>
+          <td>{{ r.tipo }}{% if "antes_de_restaurar" in r.nombre %} <span class="small text-body-secondary">(antes de restaurar)</span>{% endif %}</td>
+          <td class="d-none d-md-table-cell mono small">{{ r.nombre }}</td>
+          <td class="text-nowrap">{{ r.tamano|filesizeformat }}</td>
+          <td class="acciones pe-3">
+            <div class="d-flex gap-2 justify-content-end">
+              <a class="btn btn-outline-negro btn-sm" style="min-height:40px" href="{% url 'accesos:respaldo_descargar' r.carpeta r.nombre %}" aria-label="Descargar {{ r.nombre }}"><i class="bi bi-download"></i> <span class="d-none d-sm-inline">Descargar</span></a>
+              <div class="dropdown">
+                <button class="btn btn-outline-negro btn-sm" style="min-height:40px" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Más acciones para {{ r.nombre }}"><i class="bi bi-three-dots"></i></button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><button class="dropdown-item py-2" type="button" data-restaurar-origen="{{ r.carpeta }}/{{ r.nombre }}" data-restaurar-nombre="{{ r.fecha|date:'d-m-Y H:i' }}"><i class="bi bi-arrow-counterclockwise"></i> Restaurar este respaldo</button></li>
+                  <li><form method="post" action="{% url 'accesos:respaldo_eliminar' r.carpeta r.nombre %}" data-confirmar="¿Eliminar del servidor el respaldo del {{ r.fecha|date:'d-m-Y H:i' }}? Esta acción no se puede deshacer.">{% csrf_token %}
+                    <button class="dropdown-item py-2 text-danger" type="submit"><i class="bi bi-trash"></i> Eliminar</button></form></li>
+                </ul>
+              </div>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5"><div class="vacio"><i class="bi bi-archive"></i>Aún no hay respaldos. Genere el primero con «Generar respaldo».</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta" id="restaurar">
+  <h2 class="h5"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurar la aplicación</h2>
+  <div class="alert alert-warning" role="alert">
+    <strong>Atención:</strong> restaurar reemplaza <strong>todos</strong> los datos actuales por los del respaldo.
+    Antes de hacerlo, SIREMA guarda automáticamente una copia del estado actual en esta lista.
+    Al terminar se cierran todas las sesiones y cada usuario debe ingresar nuevamente.
+  </div>
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" action="{% url 'accesos:respaldo_restaurar' %}" enctype="multipart/form-data" novalidate
+        data-confirmar="Se reemplazarán TODOS los datos de SIREMA por los del respaldo. ¿Continuar?" data-form-restaurar>
+    {% csrf_token %}
+    {{ form.origen }}
+    <div class="alert alert-info d-none" data-restaurar-seleccion>
+      Respaldo del servidor seleccionado: <strong data-restaurar-etiqueta></strong>
+      <button class="btn btn-link btn-sm p-0 ms-2" type="button" data-restaurar-quitar>Usar un archivo en su lugar</button>
+    </div>
+    <div data-restaurar-archivo>
+      {% campo form.archivo ayuda="Archivo .zip descargado anteriormente desde esta pantalla." %}
+    </div>
+    <div class="row g-2">
+      <div class="col-12 col-md-6">{% campo form.contrasena %}</div>
+      <div class="col-12 col-md-6">{% campo form.confirmacion %}</div>
+    </div>
+    <button class="btn btn-danger btn-touch" type="submit"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restaurar datos</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% estatico 'js/respaldos.js' %}"></script>
+{% endblock %}

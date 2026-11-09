@@ -8,4 +8,5 @@ urlpatterns = [
     path("", views.ReportesView.as_view(), name="reportes"),
     path("panel/", views.PanelView.as_view(), name="panel"),
     path("exportar/<str:formato>/", views.ExportarView.as_view(), name="exportar"),
+    path("inventario.xlsx", views.InventarioXlsxView.as_view(), name="inventario_xlsx"),
 ]

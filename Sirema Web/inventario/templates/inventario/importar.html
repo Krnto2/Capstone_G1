@@ -11,6 +11,7 @@
       <hr>
       <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
         {% campo form.archivo %}
+        {% campo form.crear_catalogos %}
         <button class="btn btn-sirema btn-touch" type="submit"><i class="bi bi-upload" aria-hidden="true"></i> Cargar planilla</button>
       </form>
     </div>
@@ -21,7 +22,18 @@
         <div class="tarjeta-titulo">Resultado de la carga</div>
         <p><span class="badge-sirema estado-realizada">{{ resultado.registrados|length }} registrados</span>
            <span class="badge-sirema {% if resultado.rechazados %}estado-vencida{% else %}estado-pendiente{% endif %}">{{ resultado.rechazados|length }} rechazados</span>
+           {% if resultado.catalogos_creados %}<span class="badge-sirema estado-pendiente">{{ resultado.catalogos_creados }} catálogos creados</span>{% endif %}
            <span class="text-body-secondary small">de {{ resultado.total }} filas</span></p>
+        {% if resultado.catalogos_creados %}
+          <details class="mb-3"><summary class="fw-semibold">Ver categorías, unidades y cajoneras creadas</summary>
+            <div class="small mt-2">
+              {% if resultado.unidades_creadas %}<p class="mb-1"><strong>Unidades ({{ resultado.unidades_creadas|length }}):</strong> {{ resultado.unidades_creadas|join:", " }}</p>{% endif %}
+              {% if resultado.cajoneras_creadas %}<p class="mb-1"><strong>Cajoneras ({{ resultado.cajoneras_creadas|length }}):</strong> {{ resultado.cajoneras_creadas|join:", " }}</p>{% endif %}
+              {% if resultado.categorias_creadas %}<p class="mb-1"><strong>Categorías ({{ resultado.categorias_creadas|length }}):</strong> {{ resultado.categorias_creadas|join:", " }}</p>{% endif %}
+              <p class="text-body-secondary mb-0">Revise y complete sus nombres en Unidades y cajoneras y en Categorías.</p>
+            </div>
+          </details>
+        {% endif %}
         {% if resultado.rechazados %}
           <div class="table-responsive">
             <table class="table tabla-sirema small">
