@@ -77,6 +77,16 @@ class TestCP08Ejecucion:
         responder_todo(revision, bombero)
         assert services.finalizar(revision, bombero).en_plazo is False
 
+    @pytest.mark.parametrize("estado", [EstadoRevision.EN_CURSO, EstadoRevision.VENCIDA])
+    def test_bitacora_registra_el_estado_que_tenia_antes_de_finalizar(self, revision, bombero, estado):
+        Revision.objects.filter(pk=revision.pk).update(estado=estado)
+        revision.refresh_from_db()
+        responder_todo(revision, bombero)
+        services.finalizar(revision, bombero)
+        evento = EventoAuditoria.objects.get(accion="revision", id_registro=str(revision.pk))
+        assert evento.datos_anteriores == {"estado": estado}
+        assert evento.datos_nuevos["estado"] == EstadoRevision.REALIZADA
+
     def test_api_json_de_autoguardado(self, client, revision, bombero):
         client.force_login(bombero)
         punto = revision.plan.puntos.get(numero_orden=2)

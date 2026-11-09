@@ -241,6 +241,7 @@ def finalizar(revision, usuario, observaciones=None, hallazgo=None):
                 raise ErrorRevision("Describa el hallazgo y su criticidad.", requiere_hallazgo=True)
 
         ahora = timezone.now()
+        estado_anterior = revision.estado
         revision.estado = EstadoRevision.REALIZADA
         revision.usuario_ejecutor = usuario
         revision.fecha_hora_inicio = revision.fecha_hora_inicio or ahora
@@ -263,7 +264,7 @@ def finalizar(revision, usuario, observaciones=None, hallazgo=None):
             )
 
         auditoria.registrar(AccionAuditoria.REVISION, "revision", revision.pk, usuario=usuario,
-                            anteriores={"estado": EstadoRevision.EN_CURSO},
+                            anteriores={"estado": estado_anterior},
                             nuevos={
                                 "estado": revision.estado,
                                 "resultado_global": global_,
