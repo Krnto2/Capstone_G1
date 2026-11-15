@@ -1,9 +1,14 @@
 """CP-01 Gestión de usuarios y CP-02 Autenticación y control de acceso por rol."""
 import pytest
+from datetime import timedelta
+
+from axes.models import AccessAttempt
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.db import connection, transaction
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from accesos import auditoria
 from accesos.forms import FormularioUsuario
@@ -226,3 +231,50 @@ class TestRedireccionInterna:
         respuesta = client.post(reverse("accesos:usuario_estado", args=[bombero.pk]),
                                 {"siguiente": "https://ejemplo.com/"})
         assert respuesta.url == reverse("accesos:usuarios")
+
+
+class TestDEF03Bloqueo:
+    """DEF-03: tras 5 intentos fallidos la cuenta queda bloqueada 15 minutos (RNF-02)."""
+
+    INCORRECTA = "Incorrecta1!"
+
+    @pytest.fixture(autouse=True)
+    def axes_activo(self, settings):
+        settings.AXES_ENABLED = True
+
+    def _ingresar(self, cliente, usuario, clave):
+        return cliente.post(reverse("accesos:login"), {"username": usuario.correo, "password": clave})
+
+    def _fallar(self, cliente, usuario, veces):
+        return [self._ingresar(cliente, usuario, self.INCORRECTA) for _ in range(veces)]
+
+    def test_el_quinto_intento_fallido_bloquea_la_cuenta(self, client, bombero):
+        respuestas = self._fallar(client, bombero, 5)
+        assert [r.status_code for r in respuestas[:4]] == [200] * 4
+        assert respuestas[4].status_code == 429
+        assert "Cuenta bloqueada" in respuestas[4].content.decode()
+
+    def test_bloqueada_no_entra_ni_con_la_contrasena_correcta(self, client, bombero):
+        self._fallar(client, bombero, 5)
+        assert self._ingresar(client, bombero, CLAVE).status_code == 429
+        assert not client.get(reverse("revisiones:mis_revisiones")).status_code == 200
+
+    def test_el_bloqueo_es_por_cuenta(self, client, bombero, otro_bombero):
+        self._fallar(client, bombero, 5)
+        assert self._ingresar(Client(), otro_bombero, CLAVE).status_code == 302
+
+    def test_cuatro_fallos_y_un_acierto_reinician_el_conteo(self, client, bombero):
+        self._fallar(client, bombero, 4)
+        assert self._ingresar(client, bombero, CLAVE).status_code == 302
+        client.logout()
+        assert all(r.status_code == 200 for r in self._fallar(client, bombero, 4))
+
+    def test_se_libera_pasados_15_minutos(self, client, bombero):
+        self._fallar(client, bombero, 5)
+        AccessAttempt.objects.update(attempt_time=timezone.now() - timedelta(minutes=16))
+        assert self._ingresar(client, bombero, CLAVE).status_code == 302
+
+    def test_axes_reset_libera_la_cuenta(self, client, bombero):
+        self._fallar(client, bombero, 5)
+        call_command("axes_reset", verbosity=0)
+        assert self._ingresar(client, bombero, CLAVE).status_code == 302
