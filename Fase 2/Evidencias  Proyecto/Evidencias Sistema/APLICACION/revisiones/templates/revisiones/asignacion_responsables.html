@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Responsables de la asignación{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:asignaciones' %}">Asignaciones</a></div><h1>Cambiar responsables</h1></div></div>
+<div class="tarjeta">
+  <p><strong>{{ asignacion.material }}</strong> · {{ asignacion.plan }}</p>
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% include "componentes/_seleccion_multiple.html" with campo=form.responsables filtro="Nombre del bombero" %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar y notificar</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:asignaciones' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

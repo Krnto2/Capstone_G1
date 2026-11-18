@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}{{ material.nombre }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div>
+    <div class="ceja"><a href="{% url 'inventario:lista' %}">Inventario</a> · <span class="mono">{{ material.codigo_institucional|default:"sin código" }}</span></div>
+    <h1>{{ material.nombre }}</h1>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if material.activo %}
+      {% if 'movimiento.registrar' in permisos %}<a class="btn btn-negro btn-touch" href="{% url 'inventario:trasladar' material.pk %}"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Trasladar</a>{% endif %}
+      {% if 'asignacion.administrar' in permisos %}<a class="btn btn-sirema btn-touch" href="{% url 'revisiones:asignacion_crear' %}?material={{ material.pk }}"><i class="bi bi-link-45deg" aria-hidden="true"></i> Asignar plan</a>{% endif %}
+      {% if 'material.modificar' in permisos %}<a class="btn btn-outline-negro btn-touch" href="{% url 'inventario:editar' material.pk %}"><i class="bi bi-pencil" aria-hidden="true"></i> Modificar</a>{% endif %}
+      {% if 'material.dar_de_baja' in permisos %}<a class="btn btn-outline-danger btn-touch" href="{% url 'inventario:baja' material.pk %}"><i class="bi bi-archive" aria-hidden="true"></i> Dar de baja</a>{% endif %}
+    {% endif %}
+  </div>
+</div>
+
+{% if baja %}
+  <div class="alert alert-secondary"><i class="bi bi-archive" aria-hidden="true"></i> Dado de baja el {{ baja.fecha|date:"d-m-Y" }} por {{ baja.usuario.nombre_corto }}: {{ baja.motivo }}{% if baja.destino_final %} · Destino final: {{ baja.destino_final }}{% endif %}. Conserva su historial.</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-12 col-xl-5">
+    <div class="tarjeta">
+      <div class="tarjeta-titulo">Ficha</div>
+      <dl class="row lista-datos mb-0">
+        <dt class="col-5">Código institucional</dt><dd class="col-7 mono">{{ material.codigo_institucional|default:"—" }}</dd>
+        <dt class="col-5">Ubicación actual</dt><dd class="col-7">{{ material.cajonera.unidad }}<br><span class="fw-normal">{{ material.cajonera.nombre }}</span></dd>
+        <dt class="col-5">Categoría</dt><dd class="col-7">{{ material.categoria }}</dd>
+        <dt class="col-5">Tipo</dt><dd class="col-7">{{ material.get_tipo_display }}{% if material.tipo == 'granel' %} · {{ material.cantidad }} unidades{% endif %}</dd>
+        <dt class="col-5">Marca / modelo</dt><dd class="col-7">{{ material.marca|default:"—" }} {{ material.modelo|default:"" }}</dd>
+        <dt class="col-5">N.º de serie</dt><dd class="col-7">{{ material.numero_serie|default:"—" }}</dd>
+        <dt class="col-5">Estado</dt><dd class="col-7">{% if material.activo %}<span class="badge-sirema estado-realizada">Activo</span>{% else %}<span class="badge-sirema estado-no-realizada">De baja</span>{% endif %}</dd>
+        <dt class="col-5">Alta</dt><dd class="col-7">{{ material.fecha_alta|date:"d-m-Y" }}</dd>
+        {% if material.observaciones %}<dt class="col-5">Observaciones</dt><dd class="col-7 fw-normal">{{ material.observaciones }}</dd>{% endif %}
+      </dl>
+    </div>
+    {% for seccion in secciones %}{% include seccion.plantilla with seccion=seccion.contexto %}{% endfor %}
+  </div>
+  <div class="col-12 col-xl-7">
+    <div class="tarjeta">
+      <div class="tarjeta-titulo">Historial del elemento</div>
+      {% if eventos %}
+      <ul class="linea-tiempo">
+        {% for e in eventos %}
+          <li class="t-{{ e.tono }}">
+            <span class="icono"><i class="bi {{ e.icono }}" aria-hidden="true"></i></span>
+            <div class="fw-semibold">{% if e.url %}<a href="{{ e.url }}" class="text-decoration-none">{{ e.titulo }}</a>{% else %}{{ e.titulo }}{% endif %}</div>
+            {% if e.detalle %}<div class="small">{{ e.detalle }}</div>{% endif %}
+            <div class="small text-body-secondary">{{ e.fecha|date:"d-m-Y H:i" }}{% if e.usuario %} · {{ e.usuario }}{% endif %}</div>
+          </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <div class="vacio"><i class="bi bi-clock-history"></i>Sin eventos registrados.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

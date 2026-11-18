@@ -1,0 +1,132 @@
+from datetime import datetime, time, timedelta
+
+import pytest
+from django.urls import reverse
+from django.utils import timezone
+
+from nucleo.enums import EstadoRevision
+from nucleo.utilidades import hoy
+from reportes.indicadores import Filtros, ServicioReportes
+from revisiones.models import Hallazgo, Revision
+
+pytestmark = pytest.mark.django_db
+
+
+def _revision(asignacion, responsable, dias_atras, estado, termino_dias_atras=None):
+    programada = hoy() - timedelta(days=dias_atras)
+    revision = Revision.objects.create(asignacion=asignacion, fecha_programada=programada,
+                                       fecha_limite=programada + timedelta(days=1), estado=estado)
+    revision.responsables.add(responsable)
+    if termino_dias_atras is not None:
+        termino = datetime.combine(hoy() - timedelta(days=termino_dias_atras), time(10), timezone.get_current_timezone())
+        Revision.objects.filter(pk=revision.pk).update(fecha_hora_inicio=termino, fecha_hora_termino=termino,
+                                                       usuario_ejecutor=responsable, resultado_global="conforme")
+    return revision
+
+
+class TestCP09Panel:
+    def test_porcentaje_de_cumplimiento(self, asignacion, bombero):
+        base = min(hoy().day - 1, 8)
+        if base < 4:
+            pytest.skip("Muy temprano en el mes para armar el escenario")
+        _revision(asignacion, bombero, base, EstadoRevision.REALIZADA, termino_dias_atras=base)
+        _revision(asignacion, bombero, base - 1, EstadoRevision.REALIZADA, termino_dias_atras=base - 3)
+        _revision(asignacion, bombero, base - 2, EstadoRevision.VENCIDA)
+        _revision(asignacion, bombero, -3, EstadoRevision.PENDIENTE)
+        ind = ServicioReportes(Filtros(hoy().year, hoy().month)).cumplimiento()
+        assert ind.exigibles == 3 and ind.en_plazo == 1 and ind.fuera_de_plazo == 1
+        assert ind.porcentaje == pytest.approx(33.3, abs=0.1)
+        assert len(ind.vencidas) == 1
+
+    def test_elementos_sin_plan_y_hallazgos_abiertos(self, material, revision, bombero):
+        Hallazgo.objects.create(revision=revision, descripcion="Falla", criticidad="alta")
+        ind = ServicioReportes(Filtros(hoy().year, hoy().month)).cumplimiento()
+        assert ind.total_activos == 1 and ind.sin_plan == 0
+        assert len(ind.hallazgos_abiertos) == 1 and ind.hallazgos_alta == 1
+
+    def test_panel_solo_para_jefatura(self, client, bombero, jefatura, asignacion):
+        client.force_login(bombero)
+        assert client.get(reverse("reportes:panel")).status_code == 403
+        client.force_login(jefatura)
+        respuesta = client.get(reverse("reportes:panel"), {"periodo": f"{hoy():%Y-%m}"})
+        assert respuesta.status_code == 200 and "ind" in respuesta.context
+
+
+class TestCP10Reportes:
+    @pytest.mark.parametrize("formato,tipo", [("xlsx", "spreadsheetml"), ("csv", "text/csv")])
+    def test_exporta_reporte(self, client, jefatura, revision, formato, tipo):
+        client.force_login(jefatura)
+        respuesta = client.get(reverse("reportes:exportar", args=[formato]), {"periodo": f"{hoy():%Y-%m}"})
+        assert respuesta.status_code == 200 and tipo in respuesta["Content-Type"]
+        assert "attachment" in respuesta["Content-Disposition"]
+
+    def test_exporta_pdf_o_vista_imprimible(self, client, jefatura, revision):
+        client.force_login(jefatura)
+        respuesta = client.get(reverse("reportes:exportar", args=["pdf"]))
+        assert respuesta.status_code == 200
+        assert respuesta["Content-Type"] in ("application/pdf", "text/html; charset=utf-8")
+
+    def test_historial_del_elemento_desde_lo_mas_reciente(self, client, material, catalogo, bombero, revision):
+        material.trasladar(catalogo["caj2"], bombero, "Reorganización")
+        client.force_login(bombero)
+        eventos = client.get(reverse("inventario:detalle", args=[material.pk])).context["eventos"]
+        assert len(eventos) >= 2
+        assert eventos == sorted(eventos, key=lambda e: e["fecha"], reverse=True)
+
+
+class TestExcelConIdentidad:
+    def test_libro_con_hojas_emblema_filtros_y_fechas_reales(self, revision, bombero):
+        import datetime
+        import io
+
+        from openpyxl import load_workbook
+
+        from reportes.excel import exportar_xlsx
+
+        Hallazgo.objects.create(revision=revision, descripcion="Válvula dañada", criticidad="alta")
+        servicio = ServicioReportes(Filtros(hoy().year, hoy().month))
+        libro = load_workbook(io.BytesIO(exportar_xlsx(servicio.cumplimiento(), list(servicio.detalle()))))
+        assert libro.sheetnames == ["Resumen", "Revisiones", "Hallazgos abiertos"]
+        assert all(len(hoja._images) == 1 for hoja in libro.worksheets)
+        revisiones = libro["Revisiones"]
+        assert revisiones["A7"].value == "CÓDIGO" and revisiones["A7"].fill.fgColor.rgb.endswith("0E0F10")
+        assert revisiones.freeze_panes == "A8" and revisiones.auto_filter.ref.startswith("A7:")
+        assert isinstance(revisiones["H8"].value, datetime.datetime)
+        hallazgos = libro["Hallazgos abiertos"]
+        assert hallazgos["E8"].value == "Alta" and hallazgos["E8"].fill.fgColor.rgb.endswith("B4161C")
+
+
+class TestExportarInventarioXlsx:
+    def test_hoja_general_y_una_hoja_por_unidad_seccionada_por_cajonera(self, client, bombero, catalogo, material):
+        import io
+
+        from openpyxl import load_workbook
+
+        from inventario.models import Material
+
+        Material.objects.create(nombre="Guantes", categoria=material.categoria, cajonera=catalogo["h8_caj3"],
+                                tipo="granel", cantidad=20)
+        client.force_login(bombero)
+        respuesta = client.get(reverse("reportes:inventario_xlsx"))
+        assert respuesta.status_code == 200
+        libro = load_workbook(io.BytesIO(respuesta.content))
+        assert libro.sheetnames == ["Inventario general", "B-8", "H-8"]
+        general = [c for fila in libro["Inventario general"].iter_rows(values_only=True) for c in fila if c]
+        assert "RESUMEN POR UNIDAD" in general and "PIEZAS POR CATEGORÍA Y UNIDAD" in general
+        assert "Guantes" in general and material.nombre in general
+        h8 = [c for fila in libro["H-8"].iter_rows(values_only=True) for c in fila if c]
+        assert any(str(c).startswith("CAJONERA 3") for c in h8) and "Guantes" in h8
+        assert material.nombre not in h8
+        b8 = [c for fila in libro["B-8"].iter_rows(values_only=True) for c in fila if c]
+        assert "Sin material en esta cajonera." in b8
+
+    def test_excluye_material_dado_de_baja(self, client, jefatura, material):
+        import io
+
+        from openpyxl import load_workbook
+
+        material.dar_de_baja("Roto", jefatura)
+        client.force_login(jefatura)
+        libro = load_workbook(io.BytesIO(client.get(reverse("reportes:inventario_xlsx")).content))
+        valores = [c for h in libro for fila in h.iter_rows(values_only=True) for c in fila if c]
+        assert material.nombre not in valores

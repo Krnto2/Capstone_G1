@@ -1,0 +1,1 @@
+<span class="avatar">{% if user.tiene_foto %}<img src="{% url 'accesos:foto_perfil' user.pk %}?v={{ user.foto_version }}" alt="">{% else %}{{ user.iniciales }}{% endif %}</span>

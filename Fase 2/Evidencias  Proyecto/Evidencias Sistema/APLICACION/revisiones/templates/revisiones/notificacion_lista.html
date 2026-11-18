@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Notificaciones{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">{{ notificaciones_no_leidas }} sin leer</div><h1>Notificaciones</h1></div>
+  {% if notificaciones_no_leidas %}
+  <form method="post" action="{% url 'revisiones:leer_todas' %}">{% csrf_token %}<button class="btn btn-outline-negro btn-touch" type="submit"><i class="bi bi-check2-all" aria-hidden="true"></i> Marcar todas como leídas</button></form>
+  {% endif %}
+</div>
+<div class="tarjeta tarjeta-lista">
+  <ul class="list-group list-group-flush">
+  {% for n in notificaciones %}
+    <li class="list-group-item p-0">
+      <a class="d-flex gap-3 p-3 text-decoration-none text-reset {% if not n.leida %}bg-body-tertiary{% endif %}" href="{% url 'revisiones:notificacion' n.pk %}">
+        <span class="fs-4 {% if n.tipo == 'vencimiento' or n.tipo == 'hallazgo' %}text-danger{% elif n.tipo == 'recordatorio' %}text-warning-emphasis{% else %}text-body-secondary{% endif %}" aria-hidden="true">
+          <i class="bi {% if n.tipo == 'vencimiento' %}bi-alarm{% elif n.tipo == 'hallazgo' %}bi-exclamation-octagon{% elif n.tipo == 'recordatorio' %}bi-clock{% else %}bi-clipboard-plus{% endif %}"></i></span>
+        <span class="flex-grow-1">
+          <span class="d-flex justify-content-between gap-2"><span class="small fw-bold text-uppercase">{{ n.get_tipo_display }}</span>
+            <span class="small text-body-secondary text-nowrap">{{ n.fecha_generacion|date:"d-m-Y H:i" }}</span></span>
+          <span class="d-block {% if not n.leida %}fw-semibold{% endif %}">{{ n.mensaje }}</span>
+          {% if n.leida %}<span class="small text-body-secondary">Leída {{ n.fecha_lectura|date:"d-m-Y H:i" }}</span>{% else %}<span class="visually-hidden">Sin leer</span>{% endif %}
+        </span>
+      </a>
+    </li>
+  {% empty %}
+    <li class="list-group-item"><div class="vacio"><i class="bi bi-bell-slash"></i>No tiene notificaciones.</div></li>
+  {% endfor %}
+  </ul>
+</div>
+{% include "componentes/_paginacion.html" %}
+{% endblock %}

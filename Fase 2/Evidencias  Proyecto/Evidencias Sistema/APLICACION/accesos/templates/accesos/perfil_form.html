@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Editar datos{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'accesos:perfil' %}">Mi perfil</a></div><h1>Editar datos</h1></div></div>
+<div class="tarjeta">
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    <div class="row">
+      <div class="col-md-6">{% campo form.nombre %}</div>
+      <div class="col-md-6">{% campo form.apellidos %}</div>
+      <div class="col-md-6">{% campo form.correo %}</div>
+      <div class="col-md-6">{% campo form.telefono %}</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'accesos:perfil' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

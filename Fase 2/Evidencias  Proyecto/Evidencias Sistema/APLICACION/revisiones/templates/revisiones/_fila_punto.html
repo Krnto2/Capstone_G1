@@ -1,0 +1,21 @@
+{% load sirema %}<div class="fila-punto" data-fila-punto>
+  {{ f.ORDER.as_hidden }}
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>Punto <span data-numero>{{ forloop.counter|default:"" }}</span></strong>
+    <div class="d-flex gap-1">
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-subir aria-label="Subir punto"><i class="bi bi-arrow-up"></i></button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-bajar aria-label="Bajar punto"><i class="bi bi-arrow-down"></i></button>
+      <label class="btn btn-outline-danger btn-sm mb-0" title="Quitar punto"><i class="bi bi-trash" aria-hidden="true"></i><span class="visually-hidden">Quitar</span>
+        <input type="checkbox" name="{{ f.DELETE.html_name }}" id="{{ f.DELETE.auto_id }}" class="d-none" data-quitar {% if f.DELETE.value %}checked{% endif %}></label>
+    </div>
+  </div>
+  <div class="row g-2">
+    <div class="col-md-7">{% campo f.descripcion clase="mb-2" %}</div>
+    <div class="col-md-5">{% campo f.tipo_dato clase="mb-2" %}</div>
+    <div class="col-4 col-md-2" data-solo-numerico>{% campo f.unidad_medida clase="mb-2" %}</div>
+    <div class="col-4 col-md-2" data-solo-numerico>{% campo f.valor_minimo clase="mb-2" %}</div>
+    <div class="col-4 col-md-2" data-solo-numerico>{% campo f.valor_maximo clase="mb-2" %}</div>
+    <div class="col-6 col-md-3 d-flex align-items-center">{% campo f.obligatorio clase="mb-2" %}</div>
+    <div class="col-6 col-md-3 d-flex align-items-center">{% campo f.exige_fotografia clase="mb-2" %}</div>
+  </div>
+</div>

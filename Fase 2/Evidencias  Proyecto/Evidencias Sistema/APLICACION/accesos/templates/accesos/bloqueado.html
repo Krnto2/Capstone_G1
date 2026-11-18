@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load static %}
+{% block titulo %}Cuenta bloqueada{% endblock %}
+{% block cuerpo %}
+<div class="ingreso">
+  <header class="ingreso-portada">
+    <img src="{% static 'img/logo-8-oscuro.png' %}" alt="Emblema de la Octava Compañía de Bomberos de Talcahuano" width="300" height="158">
+    <div class="lugar">Talcahuano · Desde 1948</div>
+    <h1><span class="azul">Bomba</span> Huachipato</h1>
+    <div class="compania">Octava Compañía de Bomberos</div>
+    <div class="sistema">SIREMA · Material menor</div>
+  </header>
+  <div class="ingreso-lado">
+    <main id="contenido" class="ingreso-cuerpo">
+      <div class="ingreso-formulario">
+        <h2><i class="bi bi-lock-fill" aria-hidden="true" style="color: var(--falla)"></i> Cuenta bloqueada</h2>
+        <p>Demasiados intentos. Espere <strong>15 minutos</strong>.</p>
+        <a class="btn btn-outline-negro btn-touch w-100 mt-2" href="{% url 'accesos:login' %}">Volver</a>
+      </div>
+    </main>
+  </div>
+</div>
+{% endblock %}

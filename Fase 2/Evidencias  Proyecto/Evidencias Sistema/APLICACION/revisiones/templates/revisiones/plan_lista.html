@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Planes de revisión{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><div class="ceja">Jefatura</div><h1>Planes de revisión</h1></div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-link btn-touch" href="?{% if request.GET.ver == 'todos' %}{% else %}ver=todos{% endif %}">{% if request.GET.ver == 'todos' %}Ver solo activos{% else %}Ver también inactivos{% endif %}</a>
+    <a class="btn btn-sirema btn-touch" href="{% url 'revisiones:plan_crear' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nuevo plan</a>
+  </div>
+</div>
+<div class="row g-3">
+{% for p in planes %}
+  <div class="col-12 col-md-6 col-xxl-4">
+    <a class="tarjeta d-block h-100 text-decoration-none text-reset" href="{% url 'revisiones:plan' p.pk %}">
+      <div class="d-flex justify-content-between gap-2">
+        <div class="fw-bold fs-5">{{ p.nombre }}</div>
+        <span class="chip">v{{ p.version }}</span>
+      </div>
+      <div class="text-body-secondary">{{ p.frecuencia_legible|capfirst }} · tolerancia {{ p.dias_tolerancia }} día{{ p.dias_tolerancia|pluralize }}</div>
+      <div class="mt-2 d-flex flex-wrap gap-2">
+        <span class="chip">{{ p.n_puntos }} punto{{ p.n_puntos|pluralize }}</span>
+        <span class="chip">{{ p.n_asignaciones }} elemento{{ p.n_asignaciones|pluralize }} asignado{{ p.n_asignaciones|pluralize }}</span>
+        {% if p.exige_fotografia %}<span class="chip"><i class="bi bi-camera" aria-hidden="true"></i> exige foto</span>{% endif %}
+        {% if not p.activo %}<span class="badge-sirema estado-no-realizada">Inactivo</span>{% endif %}
+      </div>
+    </a>
+  </div>
+{% empty %}
+  <div class="col-12"><div class="tarjeta vacio"><i class="bi bi-list-check"></i>Aún no hay planes. Cree el primero con sus puntos de control.</div></div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Cambiar contraseña{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'accesos:perfil' %}">Mi perfil</a></div><h1>Cambiar contraseña</h1></div></div>
+<div class="tarjeta">
+  {% include "componentes/_errores_formulario.html" %}
+  <form method="post" novalidate>{% csrf_token %}
+    {% campo form.old_password "Contraseña actual" %}
+    {% campo form.new_password1 "Nueva contraseña" %}
+    {% campo form.new_password2 "Repita la nueva contraseña" %}
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sirema btn-touch" type="submit">Guardar contraseña</button>
+      <a class="btn btn-outline-negro btn-touch" href="{% url 'accesos:perfil' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

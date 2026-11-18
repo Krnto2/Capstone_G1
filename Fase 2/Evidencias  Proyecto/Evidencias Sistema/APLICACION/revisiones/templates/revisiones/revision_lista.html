@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Revisiones{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja">Jefatura</div><h1>Revisiones</h1></div></div>
+<form class="tarjeta mb-3" method="get" data-busqueda-en-vivo data-resultados="#resultados">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md-6 col-xl-4">{% campo filtro.q clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.estado clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.unidad clase="mb-0" %}</div>
+    <div class="col-12 col-md-6 col-xl-4">{% campo filtro.responsable clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.desde clase="mb-0" %}</div>
+    <div class="col-6 col-md-3 col-xl-2">{% campo filtro.hasta clase="mb-0" %}</div>
+    <div class="col-12 col-md-6 col-xl-3 d-flex gap-2">
+      <button class="btn btn-negro btn-touch flex-grow-1" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Filtrar</button>
+      <a class="btn btn-link btn-touch" href="{% url 'revisiones:lista' %}">Limpiar</a>
+    </div>
+  </div>
+</form>
+<div id="resultados" aria-live="polite">
+<div class="tarjeta tarjeta-lista">
+  <div class="table-responsive">
+    <table class="table tabla-sirema">
+      <thead><tr><th class="ps-3">Elemento</th><th>Ubicación</th><th>Plan</th><th>Responsable</th><th>Fecha límite</th><th>Estado</th><th>Resultado</th><th class="pe-3"></th></tr></thead>
+      <tbody>
+      {% for r in revisiones %}
+        <tr>
+          <td class="ps-3"><span class="mono fw-semibold">{{ r.material.codigo_institucional|default:"s/c" }}</span> {{ r.material.nombre }}</td>
+          <td>{{ r.material.cajonera }}</td>
+          <td>{{ r.plan }}</td>
+          <td>{{ r.responsables_cortos }}</td>
+          <td class="{% if r.urgencia == 'vencida' %}fecha-falla{% endif %}">{{ r.fecha_limite|date:"d-m-Y" }}</td>
+          <td>{{ r.estado|badge_estado }}</td>
+          <td>{% if r.resultado_global %}{{ r.resultado_global|badge_resultado }}{% else %}—{% endif %}</td>
+          <td class="pe-3 acciones"><a class="btn btn-outline-negro btn-sm" href="{% url 'revisiones:detalle' r.pk %}">Ver</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8"><div class="vacio"><i class="bi bi-calendar2"></i>No hay revisiones con esos filtros.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include "componentes/_paginacion.html" %}
+</div>
+{% endblock %}

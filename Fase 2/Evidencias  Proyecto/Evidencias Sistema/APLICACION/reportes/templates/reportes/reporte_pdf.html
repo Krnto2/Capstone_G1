@@ -1,0 +1,84 @@
+{% load static sirema %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte de cumplimiento SIREMA · {{ ind.filtros.periodo }}</title>
+<style>
+  {% if fuentes %}
+  @font-face { font-family: "Oswald"; font-weight: 500; src: url("{{ fuentes.500 }}"); }
+  @font-face { font-family: "Oswald"; font-weight: 700; src: url("{{ fuentes.700 }}"); }
+  {% else %}
+  @font-face { font-family: "Oswald"; font-weight: 500; src: url("{% static 'vendor/oswald/oswald-latin-500-normal.woff2' %}"); }
+  @font-face { font-family: "Oswald"; font-weight: 700; src: url("{% static 'vendor/oswald/oswald-latin-700-normal.woff2' %}"); }
+  {% endif %}
+  @page { size: A4 landscape; margin: 12mm 12mm 14mm;
+          @bottom-left { content: "SIREMA · Octava Compañía de Bomberos de Talcahuano"; font-size: 7.5pt; color: #666; }
+          @bottom-right { content: "Página " counter(page) " de " counter(pages); font-size: 7.5pt; color: #666; } }
+  body { font-family: "DejaVu Sans", "Segoe UI", Arial, sans-serif; font-size: 8.6pt; color: #15171a; margin: 0; }
+  .titulo { font-family: "Oswald", "Arial Narrow", Arial, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+  header { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #0e0f10; padding-bottom: 8px; }
+  header img { height: 52px; }
+  header .bloque { flex: 1; }
+  header .compania { font-family: "Oswald", Arial, sans-serif; font-weight: 500; font-size: 8pt; letter-spacing: .16em; text-transform: uppercase; color: #1a6bb5; }
+  header h1 { font-family: "Oswald", Arial, sans-serif; font-weight: 700; font-size: 17pt; margin: 1px 0 0; text-transform: uppercase; letter-spacing: .03em; }
+  header .meta { text-align: right; color: #4f555d; font-size: 8pt; line-height: 1.5; }
+  .franja { height: 3px; background: #d3121a; margin-bottom: 10px; }
+  .filtros { color: #4f555d; margin: 0 0 8px; }
+  .kpis { display: flex; gap: 8px; margin: 6px 0 12px; }
+  .kpi { flex: 1; border: 1px solid #d9dde2; border-top: 3px solid #1a6bb5; padding: 6px 9px; }
+  .kpi.rojo { border-top-color: #d3121a; } .kpi.ambar { border-top-color: #b26c00; } .kpi.negro { border-top-color: #0e0f10; }
+  .kpi .etq { font-family: "Oswald", Arial, sans-serif; font-weight: 500; font-size: 7.5pt; letter-spacing: .1em; text-transform: uppercase; color: #4f555d; }
+  .kpi b { display: block; font-family: "Oswald", Arial, sans-serif; font-weight: 700; font-size: 18pt; line-height: 1.15; }
+  h2 { font-family: "Oswald", Arial, sans-serif; font-weight: 700; font-size: 10.5pt; letter-spacing: .06em; text-transform: uppercase; margin: 12px 0 4px; padding-left: 6px; border-left: 3px solid #1a6bb5; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0e0f10; color: #fff; text-align: left; padding: 4px 5px; font-family: "Oswald", Arial, sans-serif; font-weight: 500; font-size: 7.5pt; letter-spacing: .08em; text-transform: uppercase; }
+  td { border-bottom: 1px solid #e1e4e8; padding: 3px 5px; font-size: 8pt; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f7f8; }
+  .falla { color: #b4161c; font-weight: bold; } .obs { color: #8a5300; font-weight: bold; } .ok { color: #1d7a35; font-weight: bold; }
+  .aviso { background: #fff7e0; border: 1px solid #e6c46e; padding: 8px 10px; margin-bottom: 10px; font-family: Arial, sans-serif; }
+  @media print { .aviso { display: none; } }
+</style>
+</head>
+<body>
+{% if para_imprimir %}<div class="aviso">Vista lista para imprimir: use <b>Ctrl + P → Guardar como PDF</b>. En el servidor del cuartel el PDF se descarga directamente.</div>{% endif %}
+<header>
+  {% if logo %}<img src="{{ logo }}" alt="Emblema de la Octava Compañía">{% endif %}
+  <div class="bloque">
+    <div class="compania">Bomba Huachipato · Octava Compañía de Bomberos de Talcahuano</div>
+    <h1>Reporte de cumplimiento</h1>
+  </div>
+  <div class="meta">SIREMA v{{ SIREMA_VERSION|default:"" }}<br>Generado el {{ generado|date:"d-m-Y H:i" }}</div>
+</header>
+<div class="franja"></div>
+<p class="filtros">{{ ind.filtros.etiqueta }}</p>
+<div class="kpis">
+  <div class="kpi"><span class="etq">Cumplimiento del período</span><b>{{ ind.porcentaje|porcentaje }}</b>{{ ind.en_plazo }} de {{ ind.exigibles }} en plazo</div>
+  <div class="kpi rojo"><span class="etq">Revisiones vencidas</span><b class="falla">{{ ind.vencidas|length }}</b>{{ ind.detalle_vencidas|default:"Ninguna" }}</div>
+  <div class="kpi ambar"><span class="etq">Hallazgos abiertos</span><b class="obs">{{ ind.hallazgos_abiertos|length }}</b>{{ ind.hallazgos_alta }} de criticidad alta</div>
+  <div class="kpi negro"><span class="etq">Elementos activos sin plan</span><b>{{ ind.sin_plan }}</b>de {{ ind.total_activos }} activos</div>
+</div>
+{% if ind.por_unidad %}
+<h2>Cumplimiento por unidad</h2>
+<table><thead><tr><th>Unidad</th><th>En plazo</th><th>Exigibles</th><th>%</th></tr></thead>
+<tbody>{% for f in ind.por_unidad %}<tr><td>{{ f.etiqueta }}</td><td>{{ f.en_plazo }}</td><td>{{ f.exigibles }}</td><td>{{ f.porcentaje|porcentaje }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+<h2>Revisiones del período</h2>
+<table>
+  <thead><tr><th>Código</th><th>Elemento</th><th>Ubicación</th><th>Plan</th><th>Responsable</th><th>Límite</th><th>Estado</th><th>Resultado</th><th>Ejecutada</th></tr></thead>
+  <tbody>
+  {% for r in revisiones %}
+    <tr><td>{{ r.material.codigo_institucional|default:"s/c" }}</td><td>{{ r.material.nombre }}</td><td>{{ r.material.cajonera }}</td><td>{{ r.plan }}</td>
+      <td>{{ r.responsables_cortos }}</td><td>{{ r.fecha_limite|date:"d-m-Y" }}</td><td>{{ r.get_estado_display }}</td>
+      <td class="{% if r.resultado_global == 'falla' %}falla{% elif r.resultado_global == 'observacion' %}obs{% elif r.resultado_global %}ok{% endif %}">{{ r.get_resultado_global_display|default:"—" }}</td>
+      <td>{% if r.fecha_hora_termino %}{{ r.fecha_hora_termino|date:"d-m-Y H:i" }}{% if r.en_plazo is False %} (fuera de plazo){% endif %}{% else %}—{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="9">Sin revisiones con fecha límite en el período.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if ind.hallazgos_abiertos %}
+<h2>Hallazgos abiertos</h2>
+<table><thead><tr><th>Código</th><th>Elemento</th><th>Descripción</th><th>Criticidad</th><th>Estado</th><th>Apertura</th></tr></thead>
+<tbody>{% for h in ind.hallazgos_abiertos %}<tr><td>{{ h.revision.material.codigo_institucional|default:"s/c" }}</td><td>{{ h.revision.material.nombre }}</td><td>{{ h.descripcion }}</td><td>{{ h.get_criticidad_display }}</td><td>{{ h.get_estado_display }}</td><td>{{ h.fecha_apertura|date:"d-m-Y" }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if para_imprimir %}<script>window.addEventListener("load", function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}
+</body>
+</html>

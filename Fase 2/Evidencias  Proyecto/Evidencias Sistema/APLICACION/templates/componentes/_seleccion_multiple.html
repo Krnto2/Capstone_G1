@@ -1,0 +1,12 @@
+<fieldset class="mb-3" data-seleccion>
+  <legend class="tarjeta-titulo">{{ etiqueta|default:campo.label }}</legend>
+  {% if ayuda %}<div class="form-text mt-0 mb-2">{{ ayuda }}</div>{% endif %}
+  {% if filtro %}<input class="form-control mb-2" type="search" placeholder="{{ filtro }}" aria-label="Filtrar {{ campo.label|lower }}" autocomplete="off" data-seleccion-filtro hidden>{% endif %}
+  <div class="seleccion-lista{% if campo.errors %} is-invalid{% endif %}">
+    {% for opcion in campo %}<label class="seleccion-opcion">{{ opcion.tag }}<span>{{ opcion.choice_label }}</span></label>
+    {% empty %}<p class="text-body-secondary p-3 mb-0">{{ vacio|default:"No hay opciones disponibles." }}</p>{% endfor %}
+    <p class="text-body-secondary p-3 mb-0" data-seleccion-sin-resultados hidden>Sin resultados.</p>
+  </div>
+  <div class="form-text" data-seleccion-total aria-live="polite"></div>
+  {% if campo.errors %}<ul class="errorlist">{% for e in campo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+</fieldset>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load sirema %}
+{% block titulo %}Asignar planes{% endblock %}
+{% block clase_contenido %}contenido-angosto{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><div class="ceja"><a href="{% url 'revisiones:asignaciones' %}">Asignaciones</a></div><h1>Asignar planes</h1></div></div>
+
+<form method="post" novalidate class="tarjeta">{% csrf_token %}
+  {% include "componentes/_errores_formulario.html" %}
+  {% include "componentes/_seleccion_multiple.html" with campo=form.materiales etiqueta="1. Elementos" filtro="Nombre, código o ubicación" vacio="No hay elementos activos." %}
+  {% include "componentes/_seleccion_multiple.html" with campo=form.planes etiqueta="2. Planes de revisión" filtro="Nombre del plan" vacio="No hay planes activos con puntos de control." %}
+  {% include "componentes/_seleccion_multiple.html" with campo=form.responsables etiqueta="3. Bomberos responsables" filtro="Nombre del bombero" ayuda="Con varios, basta que uno la finalice." %}
+
+  <div class="tarjeta-titulo">4. Fechas</div>
+  <div class="row">
+    <div class="col-sm-6">{% campo form.fecha_inicio %}</div>
+    <div class="col-sm-6">{% campo form.fecha_termino %}</div>
+  </div>
+  <p class="aviso-inline" data-lote-resumen aria-live="polite" hidden></p>
+  <div class="d-flex gap-2 flex-wrap">
+    <button class="btn btn-sirema btn-touch" type="submit">Asignar y notificar</button>
+    <a class="btn btn-outline-negro btn-touch" href="{% url 'revisiones:asignaciones' %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

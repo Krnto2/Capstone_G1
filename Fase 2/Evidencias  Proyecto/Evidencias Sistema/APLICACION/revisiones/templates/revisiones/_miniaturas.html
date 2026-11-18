@@ -1,0 +1,11 @@
+<div class="miniaturas">
+  {% for f in fotos %}
+    <div>
+      <a class="miniatura {% if f.anulada %}anulada{% endif %}" href="{% url 'revisiones:fotografia' f.pk %}" target="_blank" rel="noopener"
+         title="{{ f.nombre_archivo }} · {{ f.fecha_hora_captura|date:'d-m-Y H:i' }} · SHA-256 {{ f.hash_sha256|truncatechars:13 }}">
+        <img src="{% url 'revisiones:fotografia' f.pk %}" alt="Fotografía de evidencia{% if f.anulada %} (anulada){% endif %}" loading="lazy">
+      </a>
+      {% if not f.anulada and 'fotografia.anular' in permisos %}<a class="small d-block text-center" href="{% url 'revisiones:anular_foto' f.pk %}">Anular</a>{% endif %}
+    </div>
+  {% endfor %}
+</div>

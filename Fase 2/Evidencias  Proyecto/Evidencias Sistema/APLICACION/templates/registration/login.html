@@ -1,0 +1,69 @@
+{% extends "base.html" %}{% load static sirema %}
+{% block titulo %}Iniciar sesión{% endblock %}
+{% block cuerpo %}
+<div class="ingreso">
+  <header class="ingreso-portada">
+    <img src="{% static 'img/logo-8-oscuro.png' %}" alt="Emblema de la Octava Compañía de Bomberos de Talcahuano" width="300" height="158">
+    <div class="lugar">Talcahuano · Desde 1948</div>
+    <h1><span class="azul">Bomba</span> Huachipato</h1>
+    <div class="compania">Octava Compañía de Bomberos</div>
+    <div class="sistema">SIREMA · Material menor</div>
+  </header>
+  <div class="ingreso-lado">
+    <div class="tema-ingreso">
+      <button type="button" class="btn-tema" data-cambiar-tema data-solo-icono aria-pressed="false" aria-label="Cambiar entre modo claro y oscuro">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i><i class="bi bi-sun" aria-hidden="true"></i>
+      </button>
+    </div>
+    <main id="contenido" class="ingreso-cuerpo">
+      <div class="ingreso-formulario">
+        <h2>Iniciar sesión</h2>
+        {% include "componentes/_errores_formulario.html" %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          {% campo form.username %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.password.id_for_label }}">Contraseña</label>
+            <div class="input-group">
+              {{ form.password }}
+              <button class="btn btn-outline-secondary" type="button" data-alternar-clave="#{{ form.password.id_for_label }}" aria-label="Mostrar contraseña" style="min-width:52px"><i class="bi bi-eye" aria-hidden="true"></i></button>
+            </div>
+            {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+          <button type="submit" class="btn btn-sirema btn-lg w-100 mt-2">Ingresar</button>
+        </form>
+        <p class="text-body-secondary small mt-4 mb-0">¿Olvidó su contraseña? Pídala al administrador.</p>
+      </div>
+      {% if usuarios_demo %}
+        <div class="cuentas-demo" aria-label="Cuentas de prueba">
+          <div class="fw-bold">Cuentas de prueba</div>
+          <div class="small mb-2">Clave: <code class="fw-bold">{{ contrasena_demo }}</code></div>
+          <ul class="list-unstyled small mb-0">
+            {% for u in usuarios_demo %}
+              <li class="d-flex justify-content-between align-items-center gap-2">
+                <button type="button" class="btn btn-link btn-sm p-0 text-start" data-usuario-demo="{{ u.correo }}">{{ u.correo }}</button>
+                <span>{{ u.rol }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </main>
+    <footer class="ingreso-pie">SIREMA v{{ SIREMA_VERSION }}</footer>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if usuarios_demo %}
+<script>
+  document.querySelectorAll("[data-usuario-demo]").forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      document.getElementById("id_username").value = boton.dataset.usuarioDemo;
+      document.getElementById("id_password").value = "{{ contrasena_demo|escapejs }}";
+      document.getElementById("id_password").focus();
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}
