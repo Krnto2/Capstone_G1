@@ -1,4 +1,3 @@
-# Imagen única de SIREMA: la usan sirema-web (Gunicorn) y sirema-scheduler (cron).
 FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -6,7 +5,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=config.settings.produccion \
     TZ=America/Santiago
 
-# cron para el programador, Pango para WeasyPrint (PDF) y pg_dump 16 para los respaldos.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl gnupg cron tzdata \
        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libharfbuzz-subset0 fonts-dejavu-core \

@@ -1,9 +1,3 @@
-"""
-API JSON de la ejecución de revisiones (DAS 4.3.3, docs/openapi.yaml).
-
-Durante una revisión el navegador guarda cada punto con fetch y sube las
-fotografías en solicitudes multipart. El resto del sistema usa páginas HTML.
-"""
 import json
 
 from django.http import JsonResponse

@@ -1,9 +1,3 @@
-/*
- * SIREMA · ejecución de revisiones (CU-C7, pantalla M3).
- * Cada respuesta se guarda en el momento con una solicitud JSON (RF-08).
- * Si se corta la red, la respuesta queda en una cola local y se reenvía al
- * reconectar (curso alternativo 4.a).
- */
 (function () {
   "use strict";
   var raiz = document.getElementById("revision");
@@ -22,7 +16,6 @@
     estado.innerHTML = '<i class="bi ' + iconos[tipo] + '" aria-hidden="true"></i> ' + texto;
   }
 
-  // ---------------------------------------------------------- cola local --
   function leerCola() {
     try { return JSON.parse(localStorage.getItem(claveCola) || "{}"); } catch (e) { return {}; }
   }
@@ -30,7 +23,7 @@
     try {
       if (Object.keys(cola).length) localStorage.setItem(claveCola, JSON.stringify(cola));
       else localStorage.removeItem(claveCola);
-    } catch (e) { /* almacenamiento no disponible */ }
+    } catch (e) {}
   }
   function encolar(idPunto, datos) { var cola = leerCola(); cola[idPunto] = datos; guardarCola(cola); }
 
@@ -45,10 +38,9 @@
           var actual = leerCola(); delete actual[id]; guardarCola(actual);
         });
       });
-    }, Promise.resolve()).catch(function () { /* sigue en cola */ });
+    }, Promise.resolve()).catch(function () {});
   }
 
-  // ----------------------------------------------------------- progreso --
   function actualizarProgreso(json) {
     var resumen = json.resumen, faltan = json.faltantes;
     if (resumen) {
@@ -65,7 +57,6 @@
     }
   }
 
-  // -------------------------------------------------------------- envío --
   function enviarDatos(idPunto, datos) {
     return fetch(urlPunto(idPunto), {
       method: "POST",
@@ -138,10 +129,9 @@
     mostrarError(seccion, "");
     mostrarEstado("guardando", "Guardando…");
     enviarDatos(seccion.dataset.punto, { resultado: resultado, valor: valor, observacion: observacion.trim() })
-      .catch(function () { /* el error ya se mostró */ });
+      .catch(function () {});
   }
 
-  // ------------------------------------------------------ comportamiento --
   document.querySelectorAll(".punto[data-punto]").forEach(function (seccion) {
     var temporizador;
     var bloqueObs = seccion.querySelector("[data-bloque-observacion]");
@@ -177,7 +167,6 @@
     if (textoObs) textoObs.addEventListener("input", function () { if (seccion.dataset.resultado) programarEnvio(); });
   });
 
-  // ----------------------------------------------------------- fotografías --
   document.querySelectorAll("input[data-foto-punto]").forEach(function (entrada) {
     entrada.addEventListener("change", function () {
       var archivo = entrada.files && entrada.files[0];
@@ -206,9 +195,6 @@
     });
   });
 
-  // ------------------------------------------------------------ borrador --
-  // Lo que se marca o se escribe y aún no llega al servidor queda en este dispositivo. Si el bombero
-  // sale de la página o lo llaman, al volver lo encuentra y se envía solo.
   var borradores = window.SiremaBorradores;
   var claveBorrador = borradores ? borradores.clave("revision-" + idRevision) : null;
   var secciones = Array.prototype.slice.call(document.querySelectorAll(".punto[data-punto]"));

@@ -16,8 +16,6 @@ TELEFONO = re.compile(r"\+?[0-9][0-9 ]{7,14}")
 
 
 class ValidacionesUsuario:
-    """Reglas comunes al formulario del administrador y al del propio usuario."""
-
     def clean_correo(self):
         correo = self.cleaned_data["correo"].strip().lower()
         existentes = Usuario.objects.filter(correo__iexact=correo).exclude(pk=self.instance.pk)
@@ -48,7 +46,6 @@ class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
     }
 
     def confirm_login_allowed(self, user):
-        """Una cuenta deshabilitada no ingresa y el intento queda en la bitácora (RNF-09)."""
         if not user.is_active:
             auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk,
                                 nuevos={"evento": "intento_cuenta_deshabilitada"}, usuario=user,
@@ -57,23 +54,19 @@ class FormularioIngreso(FormularioBootstrap, AuthenticationForm):
 
 
 class FormularioCambioContrasena(FormularioBootstrap, PasswordChangeForm):
-    """CU-A2: el cambio exige la contraseña actual (RF-02)."""
+    pass
 
 
 class FormularioRestablecerContrasena(FormularioBootstrap, SetPasswordForm):
-    """El administrador asigna una contraseña nueva (no hay recuperación por correo)."""
+    pass
 
 
 class FormularioFotoPerfil(Formulario):
-    """CU-A2: el titular cambia su propia foto de perfil (RF-01)."""
-
     foto = forms.ImageField(error_messages={"invalid_image": "El archivo no es una imagen válida.",
                                             "required": "Seleccione una imagen."})
 
 
 class FormularioPerfil(ValidacionesUsuario, FormularioModelo):
-    """CU-A2: el titular corrige sus propios datos."""
-
     class Meta:
         model = Usuario
         fields = ["nombre", "apellidos", "correo", "telefono"]
@@ -177,8 +170,6 @@ class FiltroBitacora(Formulario):
 
 
 class FormularioRestaurarRespaldo(Formulario):
-    """Restaurar un respaldo: archivo subido o uno guardado en el servidor, con doble confirmación."""
-
     archivo = forms.FileField(label="Archivo de respaldo (.zip)", required=False,
                               widget=forms.FileInput(attrs={"accept": ".zip,application/zip"}))
     origen = forms.CharField(required=False, widget=forms.HiddenInput)

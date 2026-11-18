@@ -1,9 +1,3 @@
-/*
- * SIREMA · captura de fotografías desde la cámara del celular (CU-C10).
- * El navegador abre la cámara trasera con <input capture="environment">; el
- * archivo original se envía sin recomprimir para conservar la fecha de captura
- * de sus metadatos. El servidor lo redimensiona y calcula su SHA-256.
- */
 window.SiremaCamara = (function () {
   "use strict";
   var TIPOS = ["image/jpeg", "image/png", "image/webp"];

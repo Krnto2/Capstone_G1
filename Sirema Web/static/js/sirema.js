@@ -1,8 +1,18 @@
-/* SIREMA · utilidades comunes de la interfaz (mejora progresiva: todo funciona sin JS). */
 (function () {
   "use strict";
 
-  // Confirmación antes de acciones irreversibles.
+  function etiquetarTablas(raiz) {
+    raiz.querySelectorAll(".tabla-sirema:not(.matriz-permisos)").forEach(function (tabla) {
+      var titulos = Array.prototype.map.call(tabla.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
+      tabla.querySelectorAll("tbody tr").forEach(function (fila) {
+        Array.prototype.forEach.call(fila.children, function (celda, i) {
+          if (titulos[i] && !celda.hasAttribute("colspan")) celda.setAttribute("data-label", titulos[i]);
+        });
+      });
+    });
+  }
+  etiquetarTablas(document);
+
   document.addEventListener("submit", function (evento) {
     var form = evento.target;
     var boton = evento.submitter;
@@ -10,7 +20,6 @@
     if (mensaje && !window.confirm(mensaje)) evento.preventDefault();
   });
 
-  // Mostrar u ocultar la contraseña (M1).
   document.querySelectorAll("[data-alternar-clave]").forEach(function (boton) {
     boton.addEventListener("click", function () {
       var campo = document.querySelector(boton.dataset.alternarClave);
@@ -22,13 +31,12 @@
     });
   });
 
-  // Modo claro / oscuro. El tema inicial lo aplica un script en <head> para evitar el destello.
   var CLAVE_TEMA = "sirema-tema";
   function temaActual() { return document.documentElement.getAttribute("data-bs-theme") === "dark" ? "oscuro" : "claro"; }
   function temaGuardado() { try { return localStorage.getItem(CLAVE_TEMA); } catch (e) { return null; } }
   function aplicarTema(tema, guardar) {
     document.documentElement.setAttribute("data-bs-theme", tema === "oscuro" ? "dark" : "light");
-    if (guardar) { try { localStorage.setItem(CLAVE_TEMA, tema); } catch (e) { /* sin almacenamiento */ } }
+    if (guardar) { try { localStorage.setItem(CLAVE_TEMA, tema); } catch (e) {} }
     document.querySelectorAll("[data-cambiar-tema]").forEach(function (boton) {
       boton.setAttribute("aria-pressed", tema === "oscuro" ? "true" : "false");
       var accion = tema === "oscuro" ? "Activar modo claro" : "Activar modo oscuro";
@@ -46,13 +54,10 @@
     if (oscuroSistema.addEventListener) oscuroSistema.addEventListener("change", alCambiarSistema);
   }
 
-  // Los filtros del panel se aplican al cambiar.
   document.querySelectorAll("[data-autoenvio]").forEach(function (control) {
     control.addEventListener("change", function () { control.form.submit(); });
   });
 
-  // Búsqueda en vivo (RF-05): al escribir o cambiar un filtro, la lista se actualiza sin recargar
-  // la página. El botón del formulario sigue funcionando igual si no hay JavaScript.
   var SELECTOR_TEXTO = "input[type=search], input[type=text]";
   document.querySelectorAll("form[data-busqueda-en-vivo]").forEach(function (form) {
     var destino = document.querySelector(form.dataset.resultados);
@@ -74,7 +79,7 @@
     }
 
     function buscar() {
-      if (textoDeUnCaracter()) return;  // RF-05: resultados desde el segundo carácter
+      if (textoDeUnCaracter()) return;
       var q = consulta();
       if (q === ultima) return;
       ultima = q;
@@ -90,8 +95,9 @@
         })
         .then(function (html) {
           var nuevo = new DOMParser().parseFromString(html, "text/html").querySelector(form.dataset.resultados);
-          if (!nuevo) { form.submit(); return; }  // por ejemplo, la sesión expiró
+          if (!nuevo) { form.submit(); return; }
           destino.innerHTML = nuevo.innerHTML;
+          etiquetarTablas(destino);
           history.replaceState(null, "", url);
         })
         .catch(function (error) { if (error.name !== "AbortError") form.submit(); })
@@ -108,7 +114,6 @@
     });
   });
 
-  // Formateo del RUT en vivo (RF-01): no hace falta escribir puntos ni guion, se agregan solos.
   function rutLimpio(valor) { return valor.replace(/[^0-9kK]/g, "").toUpperCase(); }
   function rutFormateado(limpio) {
     if (limpio.length < 2) return limpio;
@@ -124,16 +129,14 @@
         if (/[0-9kK]/.test(campo.value[i])) utiles++;
         i++;
       }
-      try { campo.setSelectionRange(i, i); } catch (e) { /* algunos navegadores no lo permiten */ }
+      try { campo.setSelectionRange(i, i); } catch (e) {}
     });
   });
 
-  // La foto de perfil se guarda apenas se elige.
   document.querySelectorAll("[data-enviar-al-elegir]").forEach(function (campo) {
     campo.addEventListener("change", function () { if (campo.files.length) campo.form.submit(); });
   });
 
-  // Listas de selección múltiple: filtro y contador. Filtrar solo oculta filas; lo marcado se conserva.
   function sinTildes(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 
   document.querySelectorAll("[data-seleccion]").forEach(function (caja) {
@@ -164,7 +167,6 @@
     });
   });
 
-  // Resumen de la asignación múltiple: cada plan se aplica a cada elemento.
   document.querySelectorAll("[data-lote-resumen]").forEach(function (resumen) {
     var form = resumen.closest("form");
     function marcados(nombre) { return form.querySelectorAll('input[name="' + nombre + '"]:checked').length; }
@@ -180,8 +182,6 @@
     form.addEventListener("change", actualizar);
     actualizar();
   });
-  // Borradores: lo escrito en un formulario queda en este dispositivo hasta enviarlo. Si el bombero sale
-  // de la página, recibe una llamada o el celular recarga la pestaña, al volver lo encuentra.
   var Borradores = (function () {
     var usuario = document.body.getAttribute("data-usuario");
     var almacen = null;
@@ -200,9 +200,9 @@
     }
     function guardar(clave, valor) {
       if (saliendo) return;
-      try { almacen.setItem(clave, JSON.stringify({ t: Date.now(), v: valor })); } catch (e) { /* sin espacio */ }
+      try { almacen.setItem(clave, JSON.stringify({ t: Date.now(), v: valor })); } catch (e) {}
     }
-    function borrar(clave) { try { almacen.removeItem(clave); } catch (e) { /* sin almacenamiento */ } }
+    function borrar(clave) { try { almacen.removeItem(clave); } catch (e) {} }
     function borrarTodos() {
       saliendo = true;
       Object.keys(almacen).forEach(function (k) { if (k.indexOf(prefijo) === 0) borrar(k); });
@@ -222,7 +222,6 @@
       }
       return caja;
     }
-    // Quita los borradores vencidos de cualquier usuario.
     Object.keys(almacen).forEach(function (k) { if (k.indexOf("sirema-borrador-") === 0 && !leer(k)) borrar(k); });
     return { clave: function (sufijo) { return prefijo + sufijo; }, leer: leer, guardar: guardar, borrar: borrar,
              borrarTodos: borrarTodos, aviso: aviso };
@@ -298,7 +297,6 @@
       document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") guardar(); });
     });
 
-    // Al enviar se descarta el borrador, salvo sin conexión. Al cerrar sesión se borran todos los del usuario.
     document.addEventListener("submit", function (evento) {
       if (evento.defaultPrevented) return;
       var form = evento.target;

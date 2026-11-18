@@ -1,9 +1,3 @@
-"""
-CU-C4 Generar revisiones programadas (patrón comando).
-
-cron lo ejecuta a diario en sirema-scheduler; también puede lanzarse a mano:
-    python manage.py generar_revisiones [--fecha 2026-10-09]
-"""
 from datetime import date
 
 from django.core.management.base import BaseCommand, CommandError

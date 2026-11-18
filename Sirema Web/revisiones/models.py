@@ -1,11 +1,3 @@
-"""
-Módulo de revisiones: plan_revision, punto_control, asignacion_plan,
-asignacion_responsable, revision, revision_responsable, resultado_punto,
-fotografia, hallazgo y notificacion.
-
-Cadena principal: material -> asignacion_plan -> revision -> resultado_punto ->
-fotografia. El único enlace con el inventario es asignacion_plan.id_material.
-"""
 import uuid
 
 from django.core.exceptions import ValidationError
@@ -19,8 +11,6 @@ from nucleo.utilidades import a_decimal, hoy, sumar_periodo
 
 
 class ConResponsables:
-    """Una tarea puede quedar a cargo de varios bomberos: cualquiera la ejecuta y basta una vez."""
-
     @property
     def responsables_cortos(self):
         return ", ".join(u.nombre_corto for u in self.responsables.all())
@@ -34,8 +24,6 @@ class ConResponsables:
 
 
 class PlanRevision(models.Model):
-    """Plantilla de control: qué se revisa y con qué frecuencia."""
-
     id = models.AutoField(primary_key=True, db_column="id_plan")
     nombre = models.CharField(max_length=100)
     version = models.SmallIntegerField("versión", default=1)
@@ -79,7 +67,6 @@ class PlanRevision(models.Model):
         return sumar_periodo(desde, self.frecuencia_valor, self.frecuencia_unidad)
 
     def fecha_programada(self, inicio, n):
-        """n-ésima fecha del calendario contada desde el inicio (sin acumular desfases)."""
         return sumar_periodo(inicio, self.frecuencia_valor, self.frecuencia_unidad, veces=n)
 
     def tiene_historial(self):
@@ -87,8 +74,6 @@ class PlanRevision(models.Model):
 
 
 class PuntoControl(models.Model):
-    """Ítem que se verifica o se mide en una revisión."""
-
     id = models.AutoField(primary_key=True, db_column="id_punto")
     plan = models.ForeignKey(PlanRevision, on_delete=models.CASCADE, db_column="id_plan", related_name="puntos")
     numero_orden = models.SmallIntegerField("orden")
@@ -139,7 +124,6 @@ class PuntoControl(models.Model):
                 or (self.valor_maximo is not None and numero > self.valor_maximo))
 
     def evaluar(self, valor):
-        """Resultado sugerido para un valor: falla si queda fuera del rango aceptable."""
         if self.tipo_dato == TipoDatoPunto.NUMERICO and self.fuera_de_rango(valor):
             return ResultadoControl.FALLA
         if self.tipo_dato == TipoDatoPunto.BOOLEANO and str(valor).lower() in ("no", "false", "0"):
@@ -148,12 +132,9 @@ class PuntoControl(models.Model):
 
 
 class AsignacionPlan(ConResponsables, models.Model):
-    """Vínculo vigente entre un plan, un elemento del inventario y sus responsables."""
-
     id = models.AutoField(primary_key=True, db_column="id_asignacion")
     plan = models.ForeignKey(PlanRevision, on_delete=models.RESTRICT, db_column="id_plan",
                              related_name="asignaciones")
-    # Enlace entre módulos: el elemento del inventario que será revisado.
     material = models.ForeignKey("inventario.Material", on_delete=models.RESTRICT, db_column="id_material",
                                  related_name="asignaciones")
     responsables = models.ManyToManyField("accesos.Usuario", through="AsignacionResponsable",
@@ -183,8 +164,6 @@ class AsignacionPlan(ConResponsables, models.Model):
 
 
 class AsignacionResponsable(models.Model):
-    """Bombero a cargo de una asignación (clave compuesta)."""
-
     pk = models.CompositePrimaryKey("asignacion_id", "usuario_id")
     asignacion = models.ForeignKey(AsignacionPlan, on_delete=models.CASCADE, db_column="id_asignacion",
                                    related_name="+")
@@ -213,8 +192,6 @@ class RevisionQuerySet(models.QuerySet):
 
 
 class Revision(ConResponsables, models.Model):
-    """Aplicación de un plan a un elemento en una fecha."""
-
     id = models.AutoField(primary_key=True, db_column="id_revision")
     asignacion = models.ForeignKey(AsignacionPlan, on_delete=models.RESTRICT, db_column="id_asignacion",
                                    related_name="revisiones")
@@ -238,7 +215,6 @@ class Revision(ConResponsables, models.Model):
         verbose_name = "revisión"
         verbose_name_plural = "revisiones"
         constraints = [
-            # DAS 4.2.5: el programador de tareas no duplica revisiones.
             models.UniqueConstraint(fields=["asignacion", "fecha_programada"], name="uq_revision_asignacion_fecha"),
             models.CheckConstraint(condition=Q(fecha_hora_termino__isnull=True) | Q(fecha_hora_inicio__isnull=True)
                                    | Q(fecha_hora_termino__gte=F("fecha_hora_inicio")), name="ck_revision_horas"),
@@ -275,7 +251,6 @@ class Revision(ConResponsables, models.Model):
 
     @property
     def urgencia(self):
-        """vencida, hoy, pronto o normal: define el color de la tarjeta (M2)."""
         if self.estado == EstadoRevision.VENCIDA or (self.ejecutable and self.dias_para_limite < 0):
             return "vencida"
         if self.ejecutable and self.dias_para_limite == 0:
@@ -285,7 +260,6 @@ class Revision(ConResponsables, models.Model):
         return "normal"
 
     def calcular_resultado_global(self, resultados=None):
-        """RF-08: falla si hay alguna falla, observación si hay alguna, conforme en otro caso."""
         valores = {r.resultado for r in (resultados if resultados is not None else self.resultados.all())}
         if ResultadoControl.FALLA in valores:
             return ResultadoControl.FALLA
@@ -295,8 +269,6 @@ class Revision(ConResponsables, models.Model):
 
 
 class RevisionResponsable(models.Model):
-    """Bombero a cargo de una revisión (clave compuesta)."""
-
     pk = models.CompositePrimaryKey("revision_id", "usuario_id")
     revision = models.ForeignKey(Revision, on_delete=models.CASCADE, db_column="id_revision", related_name="+")
     usuario = models.ForeignKey("accesos.Usuario", on_delete=models.RESTRICT, db_column="id_usuario", related_name="+")
@@ -306,8 +278,6 @@ class RevisionResponsable(models.Model):
 
 
 class ResultadoPunto(models.Model):
-    """Respuesta a un punto de control dentro de una revisión (clave compuesta)."""
-
     pk = models.CompositePrimaryKey("revision_id", "punto_id")
     revision = models.ForeignKey(Revision, on_delete=models.CASCADE, db_column="id_revision",
                                  related_name="resultados")
@@ -323,7 +293,6 @@ class ResultadoPunto(models.Model):
         ordering = ["punto__numero_orden"]
         constraints = [
             restriccion_enum("resultado", ResultadoControl, "ck_resultado_valor"),
-            # RF-08: observación o falla exigen comentario.
             models.CheckConstraint(condition=Q(resultado=ResultadoControl.CONFORME)
                                    | (Q(observacion__isnull=False) & ~Q(observacion="")),
                                    name="ck_resultado_observacion"),
@@ -334,13 +303,9 @@ class ResultadoPunto(models.Model):
 
 
 class Fotografia(models.Model):
-    """Evidencia gráfica. La imagen vive en el volumen media, no en la base."""
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_fotografia")
     revision = models.ForeignKey(Revision, on_delete=models.RESTRICT, db_column="id_revision",
                                  related_name="fotografias")
-    # Con id_revision forma la clave foránea compuesta hacia resultado_punto, que la
-    # migración 0002 crea con SQL explícito en PostgreSQL (DAS 4.2.5).
     punto = models.ForeignKey(PuntoControl, on_delete=models.DO_NOTHING, db_constraint=False, null=True,
                               blank=True, db_column="id_punto", related_name="fotografias")
     usuario = models.ForeignKey("accesos.Usuario", on_delete=models.RESTRICT, db_column="id_usuario",
@@ -374,8 +339,6 @@ class Fotografia(models.Model):
 
 
 class Hallazgo(models.Model):
-    """Falla detectada en una revisión, abierta hasta que la jefatura la cierra."""
-
     id = models.AutoField(primary_key=True, db_column="id_hallazgo")
     revision = models.ForeignKey(Revision, on_delete=models.RESTRICT, db_column="id_revision",
                                  related_name="hallazgos")
@@ -418,8 +381,6 @@ class Hallazgo(models.Model):
 
 
 class Notificacion(models.Model):
-    """Aviso interno dirigido a un usuario (sin correo ni SMS)."""
-
     id = models.AutoField(primary_key=True, db_column="id_notificacion")
     usuario = models.ForeignKey("accesos.Usuario", on_delete=models.CASCADE, db_column="id_usuario",
                                 related_name="notificaciones")
@@ -443,7 +404,6 @@ class Notificacion(models.Model):
         return self.mensaje
 
     def marcar_leida(self):
-        """RF-09: una notificación abierta queda leída con su fecha."""
         if not self.leida:
             self.leida = True
             self.fecha_lectura = timezone.now()

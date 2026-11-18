@@ -1,4 +1,3 @@
-"""CP-09 Panel de cumplimiento y CP-10 Historial y reportes."""
 from datetime import datetime, time, timedelta
 
 import pytest
@@ -27,14 +26,13 @@ def _revision(asignacion, responsable, dias_atras, estado, termino_dias_atras=No
 
 class TestCP09Panel:
     def test_porcentaje_de_cumplimiento(self, asignacion, bombero):
-        # Se usan días dentro del mes actual para que todas caigan en el período.
         base = min(hoy().day - 1, 8)
         if base < 4:
             pytest.skip("Muy temprano en el mes para armar el escenario")
-        _revision(asignacion, bombero, base, EstadoRevision.REALIZADA, termino_dias_atras=base)      # en plazo
-        _revision(asignacion, bombero, base - 1, EstadoRevision.REALIZADA, termino_dias_atras=base - 3)  # fuera
-        _revision(asignacion, bombero, base - 2, EstadoRevision.VENCIDA)                              # vencida
-        _revision(asignacion, bombero, -3, EstadoRevision.PENDIENTE)                                  # aún en plazo
+        _revision(asignacion, bombero, base, EstadoRevision.REALIZADA, termino_dias_atras=base)
+        _revision(asignacion, bombero, base - 1, EstadoRevision.REALIZADA, termino_dias_atras=base - 3)
+        _revision(asignacion, bombero, base - 2, EstadoRevision.VENCIDA)
+        _revision(asignacion, bombero, -3, EstadoRevision.PENDIENTE)
         ind = ServicioReportes(Filtros(hoy().year, hoy().month)).cumplimiento()
         assert ind.exigibles == 3 and ind.en_plazo == 1 and ind.fuera_de_plazo == 1
         assert ind.porcentaje == pytest.approx(33.3, abs=0.1)
@@ -89,11 +87,11 @@ class TestExcelConIdentidad:
         servicio = ServicioReportes(Filtros(hoy().year, hoy().month))
         libro = load_workbook(io.BytesIO(exportar_xlsx(servicio.cumplimiento(), list(servicio.detalle()))))
         assert libro.sheetnames == ["Resumen", "Revisiones", "Hallazgos abiertos"]
-        assert all(len(hoja._images) == 1 for hoja in libro.worksheets)  # emblema en cada hoja
+        assert all(len(hoja._images) == 1 for hoja in libro.worksheets)
         revisiones = libro["Revisiones"]
         assert revisiones["A7"].value == "CÓDIGO" and revisiones["A7"].fill.fgColor.rgb.endswith("0E0F10")
         assert revisiones.freeze_panes == "A8" and revisiones.auto_filter.ref.startswith("A7:")
-        assert isinstance(revisiones["H8"].value, datetime.datetime)  # fecha límite como fecha de Excel
+        assert isinstance(revisiones["H8"].value, datetime.datetime)
         hallazgos = libro["Hallazgos abiertos"]
         assert hallazgos["E8"].value == "Alta" and hallazgos["E8"].fill.fgColor.rgb.endswith("B4161C")
 
@@ -120,7 +118,7 @@ class TestExportarInventarioXlsx:
         assert any(str(c).startswith("CAJONERA 3") for c in h8) and "Guantes" in h8
         assert material.nombre not in h8
         b8 = [c for fila in libro["B-8"].iter_rows(values_only=True) for c in fila if c]
-        assert "Sin material en esta cajonera." in b8  # cajonera vacía también aparece
+        assert "Sin material en esta cajonera." in b8
 
     def test_excluye_material_dado_de_baja(self, client, jefatura, material):
         import io

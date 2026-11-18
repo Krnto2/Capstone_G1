@@ -1,10 +1,3 @@
-"""
-Servicio de almacenamiento local de fotografías (actor secundario de CU-C10).
-
-Fachada (DAS 3.3): oculta la validación, el redimensionado, el cálculo del hash
-SHA-256 y la escritura del archivo. Las imágenes se guardan fuera de la base de
-datos, en el volumen media, y se identifican por un UUID no predecible.
-"""
 import hashlib
 import io
 import uuid
@@ -80,7 +73,6 @@ def _a_rgb(imagen):
 
 
 def foto_de_perfil(archivo, lado=320):
-    """Recorta la imagen al centro y devuelve un JPEG cuadrado liviano, listo para la base de datos."""
     if getattr(archivo, "size", 0) > settings.SIREMA_FOTO_MAX_BYTES:
         raise ErrorAlmacenamiento("La imagen supera los 10 MB.")
     try:
@@ -98,8 +90,6 @@ def foto_de_perfil(archivo, lado=320):
 
 
 class ServicioAlmacenamiento:
-    """IAlmacenamiento: guardar(archivo) y verificar(foto)."""
-
     def __init__(self, raiz=None):
         self.raiz = Path(raiz or settings.MEDIA_ROOT)
 
@@ -110,7 +100,6 @@ class ServicioAlmacenamiento:
         return ruta
 
     def guardar(self, archivo, subcarpeta="fotografias"):
-        """Valida, redimensiona a 1 MB como máximo, calcula el hash y escribe."""
         tamano = getattr(archivo, "size", None)
         if tamano is not None and tamano > settings.SIREMA_FOTO_MAX_BYTES:
             raise ErrorAlmacenamiento("La fotografía supera los 10 MB permitidos.")
@@ -178,7 +167,6 @@ class ServicioAlmacenamiento:
         return self.ruta_absoluta(ruta_relativa).read_bytes()
 
     def eliminar(self, ruta_relativa):
-        """Borra un archivo del volumen media. No falla si ya no existe."""
         if not ruta_relativa:
             return
         try:
@@ -187,7 +175,6 @@ class ServicioAlmacenamiento:
             pass
 
     def verificar(self, foto):
-        """True si el archivo existe y su hash coincide con el registrado."""
         try:
             return _sha256(self.leer(foto.ruta_almacenamiento)) == foto.hash_sha256
         except (OSError, ErrorAlmacenamiento):

@@ -17,12 +17,8 @@ from .forms import (FiltroMaterial, FormularioBaja, FormularioCajonera, Formular
                     FormularioMaterial, FormularioMovimiento, FormularioUnidad)
 from .models import Cajonera, Categoria, Material, Unidad
 
-# ------------------------------------------------------------- Material ----
-
 
 class MaterialListaView(PermisoRequeridoMixin, ListView):
-    """CU-B4 Buscar material."""
-
     permiso_requerido = "material.consultar"
     template_name = "inventario/material_lista.html"
     context_object_name = "materiales"
@@ -42,8 +38,6 @@ class MaterialListaView(PermisoRequeridoMixin, ListView):
 
 
 class MaterialDetalleView(PermisoRequeridoMixin, DetailView):
-    """Ficha del elemento y CU-B6 Consultar historial (lo más reciente primero)."""
-
     permiso_requerido = "material.consultar"
     template_name = "inventario/material_detalle.html"
     context_object_name = "material"
@@ -77,8 +71,6 @@ class MaterialDetalleView(PermisoRequeridoMixin, DetailView):
 
 
 class MaterialCrearView(PermisoRequeridoMixin, View):
-    """CU-B1 Registrar material."""
-
     permiso_requerido = "material.registrar"
     template_name = "inventario/material_form.html"
 
@@ -101,8 +93,6 @@ class MaterialCrearView(PermisoRequeridoMixin, View):
 
 
 class MaterialEditarView(PermisoRequeridoMixin, View):
-    """CU-B2 Modificar ficha de material."""
-
     permiso_requerido = "material.modificar"
     template_name = "inventario/material_form.html"
 
@@ -137,8 +127,6 @@ class MaterialEditarView(PermisoRequeridoMixin, View):
 
 
 class MaterialBajaView(PermisoRequeridoMixin, View):
-    """CU-B3 Dar de baja material (incluye CU-B4: se llega desde la búsqueda)."""
-
     permiso_requerido = "material.dar_de_baja"
     template_name = "inventario/material_baja.html"
 
@@ -161,8 +149,6 @@ class MaterialBajaView(PermisoRequeridoMixin, View):
 
 
 class MovimientoView(PermisoRequeridoMixin, View):
-    """CU-B5 Registrar movimiento de material."""
-
     permiso_requerido = "movimiento.registrar"
     template_name = "inventario/movimiento_form.html"
 
@@ -189,8 +175,6 @@ class MovimientoView(PermisoRequeridoMixin, View):
 
 
 class ImportarView(PermisoRequeridoMixin, View):
-    """CU-B1, curso alternativo 3.a: carga masiva desde planilla."""
-
     permiso_requerido = "material.registrar"
     template_name = "inventario/importar.html"
 
@@ -230,11 +214,7 @@ def _errores_a_formulario(form, error):
         form.add_error(None, error)
 
 
-# ------------------------------------------------------------ Catálogos ----
-
 class CatalogoMixin(PermisoRequeridoMixin):
-    """CU-B7 y CU-B8: formularios simples con auditoría."""
-
     permiso_requerido = "catalogo.administrar"
     form_class = None
     modelo = None
@@ -280,8 +260,6 @@ class CatalogoMixin(PermisoRequeridoMixin):
 
 
 class UnidadesView(PermisoRequeridoMixin, TemplateView):
-    """CU-B7 Administrar unidades y cajoneras."""
-
     permiso_requerido = "catalogo.administrar"
     template_name = "inventario/unidad_lista.html"
 
@@ -315,8 +293,6 @@ class CajoneraFormView(CatalogoMixin, View):
 
 
 class CategoriasView(PermisoRequeridoMixin, ListView):
-    """CU-B8 Administrar categorías."""
-
     permiso_requerido = "catalogo.administrar"
     template_name = "inventario/categoria_lista.html"
     context_object_name = "categorias"
@@ -335,8 +311,6 @@ class CategoriaFormView(CatalogoMixin, View):
 
 
 class EliminarCatalogoView(PermisoRequeridoMixin, View):
-    """Elimina una unidad, cajonera o categoría solo si no tiene elementos (RF-05, RF-06)."""
-
     permiso_requerido = "catalogo.administrar"
     modelos = {"unidad": (Unidad, "inventario:unidades"), "cajonera": (Cajonera, "inventario:unidades"),
                "categoria": (Categoria, "inventario:categorias")}

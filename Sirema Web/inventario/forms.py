@@ -10,7 +10,6 @@ from .models import Cajonera, Categoria, Material, Unidad
 
 
 def opciones_cajoneras(solo_activas=True):
-    """Cajoneras agrupadas por unidad para un <select> con <optgroup>."""
     cajoneras = Cajonera.objects.select_related("unidad")
     if solo_activas:
         cajoneras = cajoneras.filter(unidad__activo=True)
@@ -21,8 +20,6 @@ def opciones_cajoneras(solo_activas=True):
 
 
 class CampoCajonera(forms.ModelChoiceField):
-    """Las opciones agrupadas se cargan en el __init__ de cada formulario."""
-
     def __init__(self, **kwargs):
         super().__init__(queryset=Cajonera.objects.select_related("unidad"), **kwargs)
 
@@ -31,8 +28,6 @@ class CampoCajonera(forms.ModelChoiceField):
 
 
 class FormularioMaterial(FormularioModelo):
-    """CU-B1 Registrar material y CU-B2 Modificar ficha."""
-
     cajonera = CampoCajonera(label="Ubicación (unidad / cajonera)")
 
     class Meta:
@@ -54,7 +49,6 @@ class FormularioMaterial(FormularioModelo):
         self.fields["categoria"].empty_label = "Seleccione…"
         self.fields["cajonera"].widget.choices = opciones_cajoneras()
         if self.instance.pk:
-            # La ubicación de un elemento existente solo cambia con un movimiento (RF-06).
             del self.fields["cajonera"]
 
     def clean_codigo_institucional(self):
@@ -72,8 +66,6 @@ class FormularioMaterial(FormularioModelo):
 
 
 class FiltroMaterial(Formulario):
-    """RF-05: búsqueda por nombre o código y filtros combinados."""
-
     es_filtro = True
 
     q = forms.CharField(label="Buscar", required=False,
@@ -109,8 +101,6 @@ class FiltroMaterial(Formulario):
 
 
 class FormularioMovimiento(Formulario):
-    """CU-B5 Registrar movimiento de material."""
-
     cajonera_destino = CampoCajonera(label="Nueva ubicación")
     motivo = forms.CharField(label="Motivo", max_length=200, required=False,
                              widget=forms.TextInput(attrs={"placeholder": "Ej.: reorganización de la cabina"}))
@@ -128,8 +118,6 @@ class FormularioMovimiento(Formulario):
 
 
 class FormularioBaja(Formulario):
-    """CU-B3 Dar de baja material."""
-
     motivo = forms.CharField(label="Motivo de la baja", max_length=200,
                              widget=forms.TextInput(attrs={"placeholder": "Ej.: roto en emergencia"}))
     destino_final = forms.CharField(label="Destino final", max_length=100, required=False)

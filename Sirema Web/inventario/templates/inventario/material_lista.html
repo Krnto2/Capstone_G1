@@ -15,12 +15,17 @@
 <form class="tarjeta mb-3" method="get" role="search" data-busqueda-en-vivo data-resultados="#resultados">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-lg-4">{% campo filtro.q clase="mb-0" %}</div>
-    <div class="col-6 col-lg-2">{% campo filtro.unidad clase="mb-0" %}</div>
-    <div class="col-6 col-lg-2">{% campo filtro.cajonera clase="mb-0" %}</div>
-    <div class="col-6 col-lg-2">{% campo filtro.categoria clase="mb-0" %}</div>
-    <div class="col-6 col-lg-2">{% campo filtro.estado clase="mb-0" %}</div>
+    <div class="col-12 col-lg-8 filtros-movil collapse{% if request.GET.unidad or request.GET.cajonera or request.GET.categoria or request.GET.estado and request.GET.estado != 'activo' %} show{% endif %}" id="filtros-inventario">
+      <div class="row g-2">
+        <div class="col-6 col-lg-3">{% campo filtro.unidad clase="mb-0" %}</div>
+        <div class="col-6 col-lg-3">{% campo filtro.cajonera clase="mb-0" %}</div>
+        <div class="col-6 col-lg-3">{% campo filtro.categoria clase="mb-0" %}</div>
+        <div class="col-6 col-lg-3">{% campo filtro.estado clase="mb-0" %}</div>
+      </div>
+    </div>
   </div>
-  <div class="d-flex gap-2 mt-2">
+  <div class="d-flex flex-wrap gap-2 mt-2">
+    <button class="btn btn-outline-negro btn-touch d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#filtros-inventario" aria-expanded="{% if request.GET.unidad or request.GET.cajonera or request.GET.categoria or request.GET.estado and request.GET.estado != 'activo' %}true{% else %}false{% endif %}" aria-controls="filtros-inventario"><i class="bi bi-sliders" aria-hidden="true"></i> Filtros</button>
     <button class="btn btn-negro btn-touch" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Buscar</button>
     <a class="btn btn-link" href="{% url 'inventario:lista' %}">Limpiar filtros</a>
   </div>
@@ -28,7 +33,6 @@
 </form>
 <div id="resultados" aria-live="polite">
 
-{# Celular: tarjetas #}
 <div class="d-lg-none">
   {% for m in materiales %}
     <a class="tarjeta-revision {% if not m.activo %}u-vencida{% endif %}" href="{% url 'inventario:detalle' m.pk %}">
@@ -44,7 +48,6 @@
   {% endfor %}
 </div>
 
-{# Escritorio: tabla #}
 <div class="tarjeta tarjeta-lista d-none d-lg-block">
   <table class="table tabla-sirema">
     <thead><tr><th class="ps-3">Código</th><th>Elemento</th><th>Categoría</th><th>Ubicación</th><th>Marca / modelo</th><th>Cant.</th><th>Estado</th><th class="pe-3"></th></tr></thead>

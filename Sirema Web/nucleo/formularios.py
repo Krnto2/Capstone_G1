@@ -2,8 +2,6 @@ from django import forms
 
 
 class FormularioBootstrap:
-    """Agrega las clases de Bootstrap 5 a los controles y marca los inválidos."""
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for campo in self.fields.values():

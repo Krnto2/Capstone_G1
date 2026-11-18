@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: SIREMA · API de ejecución de revisiones
-  version: 0.9.0
+  version: 0.9.1
   description: >
     Solicitudes JSON que usa la pantalla M3 (Ejecutar revisión) para guardar cada punto en el momento
     y subir las fotografías (DAS 4.3.3). Requieren sesión iniciada (cookie de sesión de Django) y el

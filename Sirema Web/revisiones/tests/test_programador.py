@@ -1,4 +1,3 @@
-"""CP-07 Planes de revisión y programador de tareas; avisos de CP-09."""
 from datetime import timedelta
 
 import pytest
@@ -18,8 +17,8 @@ class TestCP07Programador:
     def test_genera_revisiones_hasta_el_horizonte_sin_duplicar(self, asignacion):
         programador = ProgramadorRevisiones(fecha=hoy(), anticipacion=14)
         creadas = programador.generar_revisiones()
-        assert creadas == 3  # hoy, +7 y +14 días (plan semanal)
-        assert programador.generar_revisiones() == 0  # idempotente
+        assert creadas == 3
+        assert programador.generar_revisiones() == 0
         primera = asignacion.revisiones.order_by("fecha_programada").first()
         assert primera.fecha_limite == primera.fecha_programada + timedelta(days=1)
 
@@ -44,7 +43,7 @@ class TestCP07Programador:
         assert revision.estado == EstadoRevision.VENCIDA
         assert Notificacion.objects.filter(usuario=bombero, tipo=TipoNotificacion.VENCIMIENTO).count() == 1
         assert Notificacion.objects.filter(usuario=jefatura, tipo=TipoNotificacion.VENCIMIENTO).count() == 1
-        programador.emitir_avisos()  # no repite avisos
+        programador.emitir_avisos()
         assert Notificacion.objects.filter(tipo=TipoNotificacion.VENCIMIENTO).count() == 2
 
     def test_aviso_24_horas_antes(self, revision, bombero):
@@ -74,7 +73,7 @@ class TestCP07Planes:
         nuevo, es_version = services.guardar_plan(plan, datos, self.PUNTOS, jefatura)
         plan.refresh_from_db()
         assert es_version and nuevo.version == 2 and not plan.activo
-        assert plan.puntos.count() == 3  # la versión histórica no cambia
+        assert plan.puntos.count() == 3
         assert AsignacionPlan.objects.filter(plan=nuevo, activa=True).count() == 1
         assert not AsignacionPlan.objects.filter(plan=plan, activa=True).exists()
 

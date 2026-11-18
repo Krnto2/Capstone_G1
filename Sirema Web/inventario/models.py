@@ -1,10 +1,3 @@
-"""
-Módulo de inventario: unidad, cajonera, categoria, material, movimiento y baja.
-
-Material es la tabla central del inventario. Las reglas que dependen solo de sus
-datos viven en el modelo (trasladar, dar_de_baja); las que coordinan varios
-pasos usan transacciones atómicas (RNF-08).
-"""
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import Q
@@ -17,8 +10,6 @@ from .signals import material_dado_de_baja
 
 
 class Unidad(models.Model):
-    """Carro de la compañía o bodega del cuartel."""
-
     id = models.AutoField(primary_key=True, db_column="id_unidad")
     codigo = models.CharField("código", max_length=10, unique=True)
     nombre = models.CharField(max_length=60)
@@ -36,8 +27,6 @@ class Unidad(models.Model):
 
 
 class Cajonera(models.Model):
-    """Compartimento de una unidad. No existe sin su unidad."""
-
     id = models.AutoField(primary_key=True, db_column="id_cajonera")
     unidad = models.ForeignKey(Unidad, on_delete=models.RESTRICT, db_column="id_unidad", related_name="cajoneras")
     nombre = models.CharField(max_length=60)
@@ -75,7 +64,6 @@ class MaterialQuerySet(models.QuerySet):
         return self.select_related("categoria", "cajonera", "cajonera__unidad")
 
     def buscar(self, texto):
-        """RF-05: nombre o código parcial, desde el segundo carácter."""
         texto = (texto or "").strip()
         if len(texto) < 2:
             return self
@@ -84,8 +72,6 @@ class MaterialQuerySet(models.QuerySet):
 
 
 class Material(models.Model):
-    """Ficha de un elemento de material menor."""
-
     id = models.AutoField(primary_key=True, db_column="id_material")
     categoria = models.ForeignKey(Categoria, on_delete=models.RESTRICT, db_column="id_categoria",
                                   related_name="materiales", verbose_name="categoría")
@@ -110,7 +96,6 @@ class Material(models.Model):
         ordering = ["codigo_institucional", "nombre"]
         verbose_name_plural = "material"
         constraints = [
-            # RF-04: índice único parcial, solo entre los elementos que registran código.
             models.UniqueConstraint(fields=["codigo_institucional"], condition=Q(codigo_institucional__isnull=False),
                                     name="uq_material_codigo_institucional"),
             models.CheckConstraint(condition=Q(cantidad__gte=1), name="ck_material_cantidad"),
@@ -133,7 +118,6 @@ class Material(models.Model):
         return str(self.cajonera)
 
     def trasladar(self, destino, usuario, motivo=None):
-        """RF-06: registra el movimiento y actualiza la ubicación en una transacción."""
         if not self.activo:
             raise ValidationError("No se pueden mover elementos dados de baja.")
         if destino.pk == self.cajonera_id:
@@ -152,7 +136,6 @@ class Material(models.Model):
         return movimiento
 
     def dar_de_baja(self, motivo, usuario, destino_final=None):
-        """RF-03: baja lógica. Conserva el historial y avisa a revisiones."""
         if not self.activo:
             raise ValidationError("El elemento ya está dado de baja.")
         if not (motivo or "").strip():
@@ -165,14 +148,11 @@ class Material(models.Model):
             auditoria.registrar(AccionAuditoria.BAJA, "material", self.pk, {"estado": EstadoMaterial.ACTIVO},
                                 {"estado": EstadoMaterial.DE_BAJA, "motivo": baja.motivo,
                                  "destino_final": baja.destino_final}, usuario=usuario)
-            # Observador: revisiones cierra asignaciones y anula revisiones pendientes.
             material_dado_de_baja.send(sender=Material, material=self, usuario=usuario)
         return baja
 
 
 class Movimiento(models.Model):
-    """Traslado de un elemento entre cajoneras. El alta inicial no tiene origen."""
-
     id = models.AutoField(primary_key=True, db_column="id_movimiento")
     material = models.ForeignKey(Material, on_delete=models.RESTRICT, db_column="id_material",
                                  related_name="movimientos")
@@ -194,8 +174,6 @@ class Movimiento(models.Model):
 
 
 class Baja(models.Model):
-    """Retiro definitivo de un elemento (uno a uno con material)."""
-
     id = models.AutoField(primary_key=True, db_column="id_baja")
     material = models.OneToOneField(Material, on_delete=models.RESTRICT, db_column="id_material", related_name="baja")
     usuario = models.ForeignKey("accesos.Usuario", on_delete=models.RESTRICT, db_column="id_usuario",

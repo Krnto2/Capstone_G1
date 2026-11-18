@@ -1,10 +1,3 @@
-"""
-IAuditoria: registro de eventos en la bitácora (RNF-09).
-
-El middleware deja disponibles el usuario y la IP de cada solicitud, de modo
-que los servicios de cualquier aplicación registren eventos sin recibir el
-request. Las acciones automáticas se atribuyen al usuario técnico «sistema».
-"""
 import contextvars
 import datetime
 import decimal
@@ -67,7 +60,6 @@ def _serializable(valor):
 
 
 def instantanea(objeto, campos=None, excluir=("password",)):
-    """Diccionario con los valores actuales de un modelo, apto para JSONB."""
     datos = {}
     for campo in objeto._meta.concrete_fields:
         if campo.column is None:
@@ -80,7 +72,6 @@ def instantanea(objeto, campos=None, excluir=("password",)):
 
 
 def diferencias(anteriores, nuevos):
-    """Deja solo las columnas que cambiaron."""
     claves = set(anteriores) | set(nuevos)
     cambiadas = {k for k in claves if anteriores.get(k) != nuevos.get(k)}
     return ({k: anteriores.get(k) for k in cambiadas}, {k: nuevos.get(k) for k in cambiadas})

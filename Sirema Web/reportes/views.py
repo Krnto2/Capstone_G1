@@ -11,8 +11,6 @@ from .indicadores import Filtros, ServicioReportes
 
 
 class InventarioXlsxView(PermisoRequeridoMixin, View):
-    """Inventario actual en Excel: hoja general y una hoja por unidad, seccionada por cajonera."""
-
     permiso_requerido = "material.consultar"
 
     def get(self, request):
@@ -40,8 +38,6 @@ class FiltrosMixin:
 
 
 class PanelView(PermisoRequeridoMixin, FiltrosMixin, TemplateView):
-    """CU-C14 Consultar panel de cumplimiento (pantalla D1)."""
-
     permiso_requerido = "panel.consultar"
     template_name = "reportes/panel.html"
 
@@ -52,8 +48,6 @@ class PanelView(PermisoRequeridoMixin, FiltrosMixin, TemplateView):
 
 
 class ReportesView(PermisoRequeridoMixin, FiltrosMixin, TemplateView):
-    """Detalle del período con exportación (CU-C15)."""
-
     permiso_requerido = "reporte.exportar"
     template_name = "reportes/reportes.html"
 
@@ -66,8 +60,6 @@ class ReportesView(PermisoRequeridoMixin, FiltrosMixin, TemplateView):
 
 
 class ExportarView(PermisoRequeridoMixin, View):
-    """CU-C15 Exportar reporte de cumplimiento en PDF, XLSX o CSV."""
-
     permiso_requerido = "reporte.exportar"
     tipos = {
         "csv": "text/csv; charset=utf-8",

@@ -1,4 +1,3 @@
-"""Perfil del usuario: datos propios, foto y reglas de contraseña."""
 import io
 
 import pytest

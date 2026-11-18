@@ -1,10 +1,3 @@
-"""
-ServicioRevisiones: coordina los casos de uso de la cadena principal.
-
-Cada caso de uso se concentra aquí, independiente de la vista que lo invoca
-(patrón capa de servicios). Las operaciones de varios pasos se confirman o se
-revierten completas con transaction.atomic (RNF-08).
-"""
 from collections import Counter
 from dataclasses import dataclass, field
 from django.core.exceptions import ValidationError
@@ -61,8 +54,6 @@ class Faltantes:
                 "foto_general": self.foto_general, "texto": self.texto, "completa": not self.hay}
 
 
-# ------------------------------------------------------------ Permisos ----
-
 def puede_ejecutar(revision, usuario):
     if not usuario.tiene_permiso("revision.ejecutar"):
         return False
@@ -75,7 +66,6 @@ def puede_ver(revision, usuario):
 
 
 def _bloquear(revision):
-    """Relee la revisión y la bloquea: su estado en memoria puede estar desactualizado."""
     return Revision.objects.select_for_update().select_related("asignacion").get(pk=revision.pk)
 
 
@@ -86,10 +76,7 @@ def _verificar_ejecucion(revision, usuario):
         raise ErrorRevision("Esta revisión está asignada a otro bombero.")
 
 
-# ------------------------------------------------------------ Ejecución ----
-
 def iniciar(revision, usuario):
-    """CU-C7 paso 2: marca la revisión en curso."""
     _verificar_ejecucion(revision, usuario)
     cambios = []
     if revision.fecha_hora_inicio is None:
@@ -124,7 +111,6 @@ def _normalizar_valor(punto, valor):
 
 
 def registrar_resultado(revision, punto, usuario, resultado, valor=None, observacion=None):
-    """CU-C8 (y CU-C9): guarda la respuesta de un punto en el momento en que se registra."""
     _verificar_ejecucion(revision, usuario)
     if punto.plan_id != revision.asignacion.plan_id:
         raise ErrorRevision("El punto no pertenece al plan de esta revisión.")
@@ -146,7 +132,6 @@ def registrar_resultado(revision, punto, usuario, resultado, valor=None, observa
 
 
 def adjuntar_fotografia(revision, archivo, usuario, punto=None, descripcion=None, almacenamiento=None):
-    """CU-C10: el servicio de almacenamiento devuelve ruta y hash SHA-256."""
     _verificar_ejecucion(revision, usuario)
     if punto is not None:
         if punto.plan_id != revision.asignacion.plan_id:
@@ -193,7 +178,6 @@ def adjuntar_fotografia(revision, archivo, usuario, punto=None, descripcion=None
 
 
 def faltantes(revision):
-    """CU-C7 paso 6: puntos obligatorios sin respuesta y fotografías exigidas."""
     puntos = list(revision.asignacion.plan.puntos.all())
     respondidos = set(revision.resultados.values_list("punto_id", flat=True))
     fotos = list(revision.fotografias.filter(anulada=False).values_list("punto_id", flat=True))
@@ -221,7 +205,6 @@ def resumen(revision):
 
 
 def finalizar(revision, usuario, observaciones=None, hallazgo=None):
-    """CU-C7 pasos 6 y 7, con CU-C12 si el resultado global es falla. Una sola transacción."""
     with transaction.atomic():
         revision = Revision.objects.select_for_update().select_related(
             "asignacion__plan", "asignacion__material__cajonera__unidad").get(pk=revision.pk)
@@ -293,7 +276,6 @@ def _ids(responsables):
 
 
 def reasignar(revision, responsables, usuario):
-    """Deja una revisión abierta a cargo de uno o varios bomberos. Avisa solo a quienes se suman."""
     if not revision.ejecutable:
         raise ErrorRevision("Solo se reasignan revisiones abiertas.")
     responsables = _validar_responsables(responsables)
@@ -311,10 +293,7 @@ def reasignar(revision, responsables, usuario):
     return revision
 
 
-# ------------------------------------------------- Fotografías y hallazgos ----
-
 def anular_fotografia(foto, motivo, usuario):
-    """CU-C11: la imagen no se elimina; la anulación queda en la bitácora con su motivo."""
     if foto.anulada:
         raise ErrorRevision("La fotografía ya está anulada.")
     if not (motivo or "").strip():
@@ -339,7 +318,6 @@ def marcar_en_reparacion(hallazgo, usuario):
 
 
 def cerrar_hallazgo(hallazgo, acciones, usuario):
-    """CU-C13: solo la jefatura lo cierra, registrando acción, usuario y fecha."""
     with transaction.atomic():
         estado_anterior = hallazgo.estado
         hallazgo.cerrar(acciones, usuario)
@@ -347,8 +325,6 @@ def cerrar_hallazgo(hallazgo, acciones, usuario):
                             {"estado": "cerrado", "acciones": hallazgo.acciones}, usuario=usuario)
     return hallazgo
 
-
-# -------------------------------------------------- Planes y asignaciones ----
 
 CAMPOS_PLAN = ["nombre", "descripcion", "frecuencia_valor", "frecuencia_unidad", "dias_tolerancia",
                "exige_fotografia"]
@@ -367,11 +343,6 @@ def _crear_puntos(plan, puntos):
 
 
 def guardar_plan(plan, datos, puntos, usuario):
-    """
-    CU-C1 con CU-C2. Si el plan ya tiene revisiones ejecutadas, modificarlo crea
-    una versión nueva y traslada a ella las asignaciones vigentes (RF-07).
-    Devuelve (plan_guardado, es_version_nueva).
-    """
     if not puntos:
         raise ValidationError("El plan debe tener al menos un punto de control.")
     datos = {k: datos.get(k) for k in CAMPOS_PLAN}
@@ -435,7 +406,6 @@ def desactivar_plan(plan, usuario):
 
 
 def asignar_plan(plan, material, responsables, fecha_inicio, usuario, fecha_termino=None):
-    """CU-C3 Asignar plan a material. Devuelve la asignación y sus primeras revisiones."""
     from .programador import ProgramadorRevisiones
 
     responsables = _validar_responsables(responsables)
@@ -459,7 +429,6 @@ def asignar_plan(plan, material, responsables, fecha_inicio, usuario, fecha_term
                 notificaciones.notificar(responsable, TipoNotificacion.ASIGNACION, _texto_asignacion(asignacion))
             creadas = ProgramadorRevisiones().generar_para(asignacion)
     except IntegrityError as error:
-        # El índice único parcial impide dos asignaciones activas iguales (CU-C3 5.a).
         raise ValidationError("El elemento ya tiene este plan vigente.") from error
     return asignacion, creadas
 
@@ -473,14 +442,10 @@ def _texto_asignacion(asignacion):
 @dataclass
 class ResultadoLote:
     asignaciones: list = field(default_factory=list)
-    omitidas: list = field(default_factory=list)  # (plan, material) que ya estaban vigentes
+    omitidas: list = field(default_factory=list)
 
 
 def asignar_en_lote(planes, materiales, responsables, fecha_inicio, usuario, fecha_termino=None):
-    """
-    Crea una asignación por cada plan en cada elemento, todas con los mismos responsables.
-    Lo que ya está vigente se omite; lo demás se confirma completo o no se confirma (RNF-08).
-    """
     resultado = ResultadoLote()
     with transaction.atomic():
         for plan in planes:
@@ -496,7 +461,6 @@ def asignar_en_lote(planes, materiales, responsables, fecha_inicio, usuario, fec
 
 
 def cambiar_responsables(asignacion, responsables, usuario):
-    """Cambia quiénes están a cargo de una asignación vigente y de sus revisiones abiertas."""
     if not asignacion.activa:
         raise ErrorRevision("Solo se cambian los responsables de una asignación vigente.")
     responsables = _validar_responsables(responsables)

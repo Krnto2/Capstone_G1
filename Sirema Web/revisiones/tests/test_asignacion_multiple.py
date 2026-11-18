@@ -1,4 +1,3 @@
-"""Asignación múltiple: varios planes y elementos a la vez, y tareas compartidas entre bomberos."""
 from datetime import timedelta
 
 import pytest
@@ -145,7 +144,7 @@ class TestCambiarResponsables:
     def test_reasignar_una_revision_a_varios(self, revision, bombero, otro_bombero, jefatura):
         services.reasignar(revision, [bombero, otro_bombero], jefatura)
         assert set(revision.responsables.all()) == {bombero, otro_bombero}
-        assert list(revision.asignacion.responsables.all()) == [bombero]  # solo esta revisión
+        assert list(revision.asignacion.responsables.all()) == [bombero]
 
     def test_una_version_nueva_del_plan_conserva_a_todos(self, compartida, plan, bombero, otro_bombero, jefatura):
         services.registrar_resultado(compartida, plan.puntos.first(), bombero, "conforme", "Sí")

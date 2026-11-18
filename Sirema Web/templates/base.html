@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0e0f10">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161d27" media="(prefers-color-scheme: dark)">
   <title>{% block titulo %}SIREMA{% endblock %} · SIREMA</title>
   <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
   <link rel="apple-touch-icon" href="{% static 'img/icono-180.png' %}">
   <script>
-    /* Tema claro u oscuro antes de dibujar la página (evita el destello blanco). */
     (function () {
       var tema = null;
       try { tema = localStorage.getItem("sirema-tema"); } catch (e) {}
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="{% estatico 'css/sirema.css' %}">
   {% block estilos %}{% endblock %}
 </head>
-<body{% if user.is_authenticated %} data-usuario="{{ user.pk }}"{% endif %}>
+<body class="{% block clase_body %}{% endblock %}"{% if user.is_authenticated %} data-usuario="{{ user.pk }}"{% endif %}>
 <a class="visually-hidden-focusable" href="#contenido">Saltar al contenido</a>
 {% block cuerpo %}
 <div class="app">

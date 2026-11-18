@@ -1,4 +1,3 @@
-"""Funciones comunes sin dependencias de otras aplicaciones."""
 import calendar
 import re
 from datetime import date, timedelta
@@ -8,7 +7,6 @@ from django.utils import timezone
 
 
 def hoy():
-    """Fecha actual en la hora de Chile continental."""
     return timezone.localdate()
 
 
@@ -21,7 +19,6 @@ def sumar_meses(fecha, meses):
 
 
 def sumar_periodo(fecha, valor, unidad, veces=1):
-    """Suma `veces` períodos de `valor` `unidad` (dia, semana, mes, anio) a `fecha`."""
     total = valor * veces
     if unidad == "dia":
         return fecha + timedelta(days=total)
@@ -35,7 +32,6 @@ def sumar_periodo(fecha, valor, unidad, veces=1):
 
 
 def normalizar_codigo(codigo):
-    """RF-04: el código no distingue mayúsculas ni espacios extremos."""
     if codigo is None:
         return None
     codigo = re.sub(r"\s+", " ", str(codigo)).strip().upper()
@@ -63,7 +59,6 @@ def rut_valido(rut):
 
 
 def formatear_rut(rut):
-    """12345678K -> 12.345.678-K"""
     rut = limpiar_rut(rut)
     if len(rut) < 2:
         return rut
@@ -73,7 +68,6 @@ def formatear_rut(rut):
 
 
 def a_decimal(valor):
-    """Convierte '20,9' o '20.9' en Decimal; None si no es un número."""
     if valor is None:
         return None
     texto = str(valor).strip().replace(" ", "")
@@ -93,7 +87,6 @@ def a_decimal(valor):
 def ip_cliente(request):
     if request is None:
         return None
-    # Nginx agrega la IP real al final de la lista; lo anterior lo envía el cliente y se puede falsificar.
     reenviada = request.META.get("HTTP_X_FORWARDED_FOR")
     if reenviada:
         return reenviada.split(",")[-1].strip()

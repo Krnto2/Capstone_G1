@@ -1,4 +1,3 @@
-/* SIREMA · edición de los puntos de control de un plan (CU-C2). */
 (function () {
   "use strict";
   var lista = document.getElementById("lista-puntos");

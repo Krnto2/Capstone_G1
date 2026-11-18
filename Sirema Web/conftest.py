@@ -1,4 +1,3 @@
-"""Fixtures comunes de las pruebas automatizadas (pytest + pytest-django)."""
 import io
 from datetime import timedelta
 

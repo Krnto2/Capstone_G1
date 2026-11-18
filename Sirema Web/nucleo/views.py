@@ -2,7 +2,6 @@ from django.shortcuts import redirect
 
 
 def inicio(request):
-    """Página de inicio según el rol: panel para la jefatura, revisiones para el resto."""
     usuario = request.user
     if usuario.tiene_permiso("panel.consultar"):
         return redirect("reportes:panel")

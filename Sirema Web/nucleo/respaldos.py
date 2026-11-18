@@ -1,17 +1,3 @@
-"""
-Respaldo y restauración completos de SIREMA (RNF-05).
-
-Un respaldo es un único archivo .zip con:
-
-    manifiesto.json      versión, motor de base de datos, fecha y migraciones aplicadas
-    base/sirema.dump     pg_dump en formato personalizado (PostgreSQL), o
-    base/db.sqlite3      copia consistente de la base (SQLite, desarrollo)
-    media/...            fotografías de evidencia
-
-El mismo formato lo generan el respaldo diario (cron), el respaldo manual del
-administrador y la copia de seguridad automática que se toma antes de restaurar.
-Este módulo no importa modelos de las aplicaciones: trabaja a nivel de base completa.
-"""
 import json
 import os
 import re
@@ -37,7 +23,7 @@ NOMBRE_VALIDO = re.compile(r"sirema_\d{8}_\d{6}(_[a-z_]+)?\.zip")
 
 
 class ErrorRespaldo(Exception):
-    """Respaldo inválido, incompatible o que no se pudo generar o restaurar."""
+    pass
 
 
 @dataclass
@@ -53,14 +39,12 @@ class Respaldo:
         return self.ruta.parent.name
 
 
-# ------------------------------------------------------------- Utilidades ----
-
 def _base():
     return Path(settings.SIREMA_RESPALDOS_DIR)
 
 
 def _motor():
-    return connection.vendor  # "postgresql" o "sqlite"
+    return connection.vendor
 
 
 def _db():
@@ -93,22 +77,18 @@ def migraciones_aplicadas():
 
 
 def _miembro_seguro(nombre):
-    """Rechaza rutas absolutas o con «..» dentro del zip."""
     ruta = PurePosixPath(nombre)
     return not (ruta.is_absolute() or ".." in ruta.parts or "\\" in nombre or ":" in nombre)
 
 
-# ------------------------------------------------------------------ Crear ----
-
 def crear_respaldo(carpeta="manuales", sufijo=""):
-    """Genera un respaldo completo en SIREMA_RESPALDOS_DIR/<carpeta>/ y devuelve su ruta."""
     destino_dir = _base() / carpeta
     destino_dir.mkdir(parents=True, exist_ok=True)
     marca = timezone.localtime().strftime("%Y%m%d_%H%M%S")
     nombre = f"sirema_{marca}{'_' + sufijo if sufijo else ''}.zip"
     destino = destino_dir / nombre
     n = 1
-    while destino.exists():  # dos respaldos en el mismo segundo
+    while destino.exists():
         n += 1
         destino = destino_dir / nombre.replace(".zip", f"_{'x' * (n - 1)}.zip")
 
@@ -150,16 +130,13 @@ def _volcar_base(tmp):
     destino = sqlite3.connect(salida)
     try:
         if connection.in_atomic_block:
-            # backup() espera indefinidamente si el origen tiene una transacción abierta.
             destino.executescript("\n".join(connection.connection.iterdump()))
         else:
-            connection.connection.backup(destino)  # copia consistente aunque haya escrituras
+            connection.connection.backup(destino)
     finally:
         destino.close()
     return salida
 
-
-# ----------------------------------------------------------------- Listar ----
 
 def listar():
     respaldos = []
@@ -178,7 +155,6 @@ def listar():
 
 
 def obtener(carpeta, nombre):
-    """Busca un respaldo por carpeta y nombre sin permitir rutas arbitrarias."""
     if carpeta not in CARPETAS or not NOMBRE_VALIDO.fullmatch(nombre or ""):
         raise ErrorRespaldo("Respaldo no encontrado.")
     ruta = _base() / carpeta / nombre
@@ -198,16 +174,12 @@ def rotar(carpeta, conservar):
     archivos = sorted(directorio.glob("sirema_*.zip"), key=lambda p: p.name, reverse=True)
     for viejo in archivos[conservar:]:
         viejo.unlink(missing_ok=True)
-    # Formato anterior (carpetas con sirema.dump y media.tar.gz).
     carpetas = sorted((p for p in directorio.iterdir() if p.is_dir()), reverse=True)
     for vieja in carpetas[conservar:]:
         shutil.rmtree(vieja, ignore_errors=True)
 
 
-# -------------------------------------------------------------- Validar ----
-
 def leer_manifiesto(ruta):
-    """Abre el zip, valida su estructura y compatibilidad, y devuelve el manifiesto."""
     try:
         zf = zipfile.ZipFile(ruta)
     except (zipfile.BadZipFile, OSError) as exc:
@@ -241,15 +213,7 @@ def leer_manifiesto(ruta):
     return manifiesto
 
 
-# -------------------------------------------------------------- Restaurar ----
-
 def restaurar(ruta):
-    """
-    Reemplaza TODA la base de datos y las fotografías por las del respaldo.
-
-    Antes de llamar a esta función conviene tomar una copia de seguridad (la vista lo hace).
-    Devuelve el manifiesto del respaldo restaurado.
-    """
     manifiesto = leer_manifiesto(ruta)
     candado = _base() / ".restaurando"
     _base().mkdir(parents=True, exist_ok=True)
@@ -267,7 +231,6 @@ def restaurar(ruta):
                 _restaurar_postgres(tmp / "base" / "sirema.dump", tmp)
             else:
                 _restaurar_sqlite(tmp / "base" / "db.sqlite3")
-            # Un respaldo de una versión anterior queda al día con las migraciones actuales.
             call_command("migrate", interactive=False, verbosity=0)
             _restaurar_media(tmp / "media")
     finally:
@@ -288,13 +251,12 @@ def _restaurar_sqlite(origen):
         connection.ensure_connection()
         if connection.in_atomic_block:
             raise ErrorRespaldo("No se puede restaurar dentro de una transacción.")
-        fuente.backup(connection.connection)  # reemplaza la base completa, página por página
+        fuente.backup(connection.connection)
     finally:
         fuente.close()
 
 
 def _restaurar_postgres(dump, tmp):
-    """Borra el esquema y carga el volcado en una sola transacción: si algo falla, no cambia nada."""
     script = tmp / "restaurar.sql"
     _ejecutar(["pg_restore", "--no-owner", "--no-privileges", "-f", str(script), str(dump)])
     preparacion = tmp / "preparar.sql"
@@ -306,7 +268,6 @@ def _restaurar_postgres(dump, tmp):
 
 
 def _restaurar_media(origen):
-    """Reemplaza el contenido de MEDIA_ROOT (que puede ser un volumen montado)."""
     media = Path(settings.MEDIA_ROOT)
     media.mkdir(parents=True, exist_ok=True)
     for hijo in media.iterdir():

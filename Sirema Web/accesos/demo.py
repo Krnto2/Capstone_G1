@@ -1,15 +1,8 @@
-"""
-Usuarios FICTICIOS de demostración (los crea `python manage.py cargar_datos_demo`).
-
-La pantalla de inicio de sesión los muestra solo con DEBUG activo y solo si
-existen en la base de datos; en producción nunca aparecen.
-"""
 from django.conf import settings
 
 CONTRASENA_DEMO = "Bomberos2026"
 
 USUARIOS_DEMO = [
-    # (cuerpo del RUT, nombre, apellidos, correo, rol)
     ("11111111", "Ana", "Torres Vidal", "admin@sirema.local", "administrador"),
     ("12345678", "Carlos", "Muñoz Reyes", "jefatura@sirema.local", "jefatura"),
     ("15555555", "Juan", "Soto Pérez", "j.soto@sirema.local", "bombero"),
@@ -19,7 +12,6 @@ USUARIOS_DEMO = [
 
 
 def usuarios_visibles():
-    """Usuarios de demostración que existen, para mostrarlos en el ingreso (solo con DEBUG)."""
     if not settings.DEBUG:
         return []
     from .models import Usuario

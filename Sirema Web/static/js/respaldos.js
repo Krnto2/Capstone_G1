@@ -1,4 +1,3 @@
-/* SIREMA · pantalla de respaldos: elegir un respaldo del servidor para restaurar. */
 (function () {
   "use strict";
 
@@ -33,7 +32,6 @@
 
   if (origen.value) mostrar(origen.value, origen.value.split("/").pop());
 
-  // Evita un segundo envío mientras se sube y restaura un archivo grande.
   form.addEventListener("submit", function (evento) {
     if (evento.defaultPrevented) return;
     var boton = form.querySelector("button[type=submit]");

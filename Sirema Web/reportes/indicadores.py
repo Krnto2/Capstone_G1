@@ -1,11 +1,3 @@
-"""
-ServicioReportes: indicadores del panel de cumplimiento (RF-09, CU-C14).
-
-% de cumplimiento = revisiones realizadas en plazo / revisiones con fecha
-límite en el período. Se consideran las revisiones ya exigibles (fecha límite
-pasada o realizadas); las que aún están dentro de plazo no penalizan, y las
-no realizadas por baja del elemento no cuentan.
-"""
 from collections import Counter
 from dataclasses import dataclass, field
 

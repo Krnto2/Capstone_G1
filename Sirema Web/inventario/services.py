@@ -1,9 +1,3 @@
-"""
-Capa de servicios del inventario (IInventario).
-
-Revisiones consulta el inventario a través de estas funciones y de los gestores
-del modelo Material, sin escribir directamente sus tablas.
-"""
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
@@ -18,7 +12,6 @@ CAMPOS_FICHA = ["codigo_institucional", "nombre", "categoria", "cajonera", "tipo
 
 
 def verificar_codigo(codigo, excluir_pk=None):
-    """RF-04: rechaza un código repetido indicando a qué elemento pertenece."""
     codigo = normalizar_codigo(codigo)
     if not codigo:
         return None
@@ -31,7 +24,6 @@ def verificar_codigo(codigo, excluir_pk=None):
 
 
 def validar_ficha(datos):
-    """Reglas de la ficha comunes al formulario y a la carga masiva."""
     errores = {}
     if datos.get("tipo") == TipoMaterial.UNITARIO:
         if not datos.get("codigo_institucional"):
@@ -43,7 +35,6 @@ def validar_ficha(datos):
 
 
 def registrar_material(datos, usuario):
-    """CU-B1: guarda el elemento activo y su ubicación inicial como primer movimiento."""
     datos = {k: v for k, v in datos.items() if k in CAMPOS_FICHA}
     datos["codigo_institucional"] = verificar_codigo(datos.get("codigo_institucional"))
     if datos.get("tipo") == TipoMaterial.UNITARIO:
@@ -59,7 +50,6 @@ def registrar_material(datos, usuario):
 
 
 def modificar_material(material, datos, usuario):
-    """CU-B2: modifica la ficha. La ubicación cambia solo mediante un movimiento."""
     anteriores = auditoria.instantanea(Material.objects.get(pk=material.pk))
     datos = {k: v for k, v in datos.items() if k in CAMPOS_FICHA and k != "cajonera"}
     datos["codigo_institucional"] = verificar_codigo(datos.get("codigo_institucional"), excluir_pk=material.pk)
@@ -80,5 +70,4 @@ def modificar_material(material, datos, usuario):
 
 
 def elementos_asignables(texto=None):
-    """Elementos activos que pueden recibir un plan (CU-C3 incluye CU-B4)."""
     return Material.objects.activos().con_ubicacion().buscar(texto)

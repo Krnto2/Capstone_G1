@@ -83,7 +83,6 @@ def porcentaje(valor, decimales=1):
 
 @register.filter
 def numero(valor):
-    """Muestra un número decimal con coma y sin ceros sobrantes."""
     if valor is None or valor == "":
         return ""
     texto = f"{valor}"
@@ -94,8 +93,6 @@ def numero(valor):
 
 @register.simple_tag
 def estatico(ruta):
-    """Como {% static %}, pero en desarrollo agrega la fecha del archivo para que el navegador
-    no use una versión antigua en caché. En producción los nombres ya llevan hash (Manifest)."""
     url = static(ruta)
     if settings.DEBUG:
         archivo = finders.find(ruta)
@@ -106,7 +103,6 @@ def estatico(ruta):
 
 @register.simple_tag(takes_context=True)
 def nav_activo(context, nombres):
-    """'active' si la vista actual coincide con alguno de los nombres (admite 'app:*')."""
     coincidencia = getattr(context.get("request"), "resolver_match", None)
     if coincidencia is None:
         return ""

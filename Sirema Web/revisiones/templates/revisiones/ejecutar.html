@@ -1,5 +1,6 @@
 {% extends "base.html" %}{% load static sirema %}
 {% block titulo %}Ejecutar revisión{% endblock %}
+{% block clase_body %}modo-enfoque{% endblock %}
 {% block clase_contenido %}contenido-angosto{% endblock %}
 {% block contenido %}
 <div id="revision" data-revision="{{ revision.pk }}"
@@ -9,12 +10,12 @@
   {% csrf_token %}
 
   <div class="cabecera-revision">
-    <div class="d-flex justify-content-between align-items-center gap-2">
-      <a class="text-white text-decoration-none fw-bold fs-5" href="{% url 'revisiones:mis_revisiones' %}"><i class="bi bi-chevron-left" aria-hidden="true"></i> {{ revision.material.nombre }}</a>
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <a class="volver" href="{% url 'revisiones:mis_revisiones' %}"><i class="bi bi-chevron-left" aria-hidden="true"></i> {{ revision.material.nombre }}</a>
       <span class="estado-guardado" id="estado-guardado" role="status" aria-live="polite"><i class="bi bi-cloud-check" aria-hidden="true"></i> Guardado</span>
     </div>
     <div class="meta mt-1"><span class="mono">{{ revision.material.codigo_institucional|default:"s/c" }}</span> · {{ revision.material.cajonera }} · Plan {{ revision.plan }}</div>
-    <div class="meta">Fecha límite {{ revision.fecha_limite|date:"d-m-Y" }}{% if revision.estado == 'vencida' %} · <strong style="color:#ffb4b4">vencida: quedará fuera de plazo</strong>{% endif %}</div>
+    <div class="meta">Fecha límite {{ revision.fecha_limite|date:"d-m-Y" }}{% if revision.estado == 'vencida' %} · <strong class="fecha-falla">vencida: quedará fuera de plazo</strong>{% endif %}</div>
     <div class="d-flex align-items-center gap-2 mt-2">
       <div class="progreso-revision" aria-hidden="true"><span id="barra-progreso" style="width:{% widthratio resumen.respondidos resumen.total 100 %}%"></span></div>
       <strong id="texto-progreso">{{ resumen.respondidos }} de {{ resumen.total }}</strong>

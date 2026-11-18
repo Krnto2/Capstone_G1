@@ -28,7 +28,6 @@ urlpatterns = [
     path("notificaciones/", views.NotificacionListaView.as_view(), name="notificaciones"),
     path("notificaciones/<int:pk>/", views.NotificacionAbrirView.as_view(), name="notificacion"),
     path("notificaciones/leer-todas/", views.MarcarTodasLeidasView.as_view(), name="leer_todas"),
-    # API JSON de ejecución (autoguardado y fotografías)
     path("api/revisiones/<int:pk>/puntos/<int:punto_id>/", api.registrar_punto, name="api_punto"),
     path("api/revisiones/<int:pk>/fotografias/", api.subir_fotografia, name="api_fotografia"),
     path("api/revisiones/<int:pk>/estado/", api.estado_revision, name="api_estado"),

@@ -1,4 +1,3 @@
-"""Los borradores se guardan por usuario: la página debe identificar a quien escribe."""
 import pytest
 from django.urls import reverse
 

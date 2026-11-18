@@ -1,8 +1,3 @@
-"""
-Módulo de accesos: rol, permiso, rol_permiso, usuario y evento_auditoria.
-
-Los nombres de tablas y columnas son los del modelo relacional de la Fase 2.
-"""
 import hashlib
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -53,8 +48,6 @@ class Permiso(models.Model):
 
 
 class RolPermiso(models.Model):
-    """Tabla intermedia rol-permiso con clave primaria compuesta."""
-
     pk = models.CompositePrimaryKey("rol_id", "permiso_id")
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE, db_column="id_rol",
                             related_name="asignaciones_permiso")
@@ -67,7 +60,6 @@ class RolPermiso(models.Model):
 
 class UsuarioQuerySet(models.QuerySet):
     def personas(self):
-        """Excluye al usuario técnico «sistema»."""
         return self.exclude(correo=CORREO_SISTEMA)
 
     def activos(self):
@@ -94,8 +86,6 @@ class UsuarioManager(BaseUserManager.from_queryset(UsuarioQuerySet)):
 
 
 class Usuario(AbstractBaseUser):
-    """Bombero de la compañía con credenciales y exactamente un rol."""
-
     id = models.AutoField(primary_key=True, db_column="id_usuario")
     rol = models.ForeignKey(Rol, on_delete=models.RESTRICT, db_column="id_rol", related_name="usuarios")
     rut = models.CharField("RUT", max_length=12, unique=True)
@@ -132,7 +122,6 @@ class Usuario(AbstractBaseUser):
 
     @property
     def nombre_corto(self):
-        """J. Soto"""
         primer_apellido = self.apellidos.split(" ")[0] if self.apellidos else ""
         return f"{self.nombre[:1]}. {primer_apellido}".strip()
 
@@ -181,7 +170,6 @@ class Usuario(AbstractBaseUser):
         return not Usuario.objects.activos().filter(rol__nombre=Rol.ADMINISTRADOR).exclude(pk=self.pk).exists()
 
     def desactivar(self):
-        """RF-01: un usuario desactivado no ingresa, pero conserva su historial."""
         if self.es_unico_administrador_activo():
             raise ValidationError("No se puede desactivar al único administrador activo.")
         self.activo = False
@@ -189,8 +177,6 @@ class Usuario(AbstractBaseUser):
 
 
 class FotoPerfil(models.Model):
-    """Foto del usuario. Va en la base para respaldarse con ella y no depender de Nginx ni de volúmenes."""
-
     usuario = models.OneToOneField(Usuario, primary_key=True, on_delete=models.CASCADE, db_column="id_usuario",
                                    related_name="foto")
     imagen = models.BinaryField()
@@ -200,8 +186,6 @@ class FotoPerfil(models.Model):
 
 
 class EventoAuditoria(models.Model):
-    """Bitácora inmutable (RNF-09). Un disparador rechaza UPDATE y DELETE."""
-
     id = models.BigAutoField(primary_key=True, db_column="id_evento")
     usuario = models.ForeignKey(Usuario, on_delete=models.RESTRICT, db_column="id_usuario",
                                 related_name="eventos_auditoria")

@@ -1,4 +1,3 @@
-"""CP-01 Gestión de usuarios y CP-02 Autenticación y control de acceso por rol."""
 import pytest
 from datetime import timedelta
 
@@ -104,7 +103,7 @@ class TestCP02ControlDeAcceso:
 
     def test_matriz_de_permisos_protege_al_administrador(self, client, administrador):
         client.force_login(administrador)
-        client.post(reverse("accesos:permisos"), {})  # desmarca todo
+        client.post(reverse("accesos:permisos"), {})
         admin = Rol.objects.get(nombre=Rol.ADMINISTRADOR)
         codigos = set(RolPermiso.objects.filter(rol=admin).values_list("permiso__codigo", flat=True))
         assert codigos == {"usuario.administrar", "permiso.administrar", "respaldo.administrar"}
@@ -234,8 +233,6 @@ class TestRedireccionInterna:
 
 
 class TestDEF03Bloqueo:
-    """DEF-03: tras 5 intentos fallidos la cuenta queda bloqueada 15 minutos (RNF-02)."""
-
     INCORRECTA = "Incorrecta1!"
 
     @pytest.fixture(autouse=True)

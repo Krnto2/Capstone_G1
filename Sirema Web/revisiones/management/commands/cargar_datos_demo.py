@@ -1,14 +1,3 @@
-"""
-Carga datos de demostración FICTICIOS para probar SIREMA (no usar en producción).
-
-    python manage.py cargar_datos_demo
-
-Crea unidades, cajoneras, categorías, material, planes, asignaciones e
-historial de revisiones de las últimas semanas, con hallazgos y avisos.
-
-Los usuarios y su contraseña están en accesos/demo.py y en el README
-(sección «Usuarios de demostración»).
-"""
 import io
 import random
 from datetime import datetime, time, timedelta
@@ -49,7 +38,6 @@ CATEGORIAS = [
 ]
 
 MATERIAL = [
-    # código, nombre, categoría, unidad, cajonera, marca, modelo
     ("8C-0112", "Motobomba portátil", "MOTORES", "B-8", "Cabina trasera", "Honda", "WX15"),
     ("8C-0457", "Detector multigas", "HAZMAT", "H-8", "Cajonera 3", "MSA", "Altair 4XR"),
     ("8C-0233", "Motosierra de rescate", "RESCATE", "B-8", "Cajonera 2", "Stihl", "MS 462 R"),
@@ -106,7 +94,6 @@ PLANES = {
 }
 
 ASIGNACIONES = [
-    # código, plan, correos responsables separados por coma, semanas atrás de inicio
     ("8C-0112", "Motobomba", "j.soto@sirema.local", 8),
     ("8C-0457", "Detector de gases", "j.soto@sirema.local", 12),
     ("8C-0233", "Motosierra", "j.soto@sirema.local", 8),
@@ -135,7 +122,6 @@ class Command(BaseCommand):
             planes = self._planes()
             self._historial(usuarios, planes)
         resumen = ProgramadorRevisiones().ejecutar()
-        # Los avisos de las semanas anteriores se dan por leídos para que la demo sea realista.
         hace_dos_dias = timezone.now() - timedelta(days=2)
         Notificacion.objects.filter(revision__fecha_programada__lt=hoy() - timedelta(days=2)).update(
             leida=True, fecha_lectura=hace_dos_dias)
@@ -222,7 +208,6 @@ class Command(BaseCommand):
         return None
 
     def _ejecutar(self, revision, usuario, cuando, tipo):
-        """tipo: conforme, observacion o falla."""
         puntos = list(revision.plan.puntos.all())
         punto_raro = random.choice(puntos)
         if revision.material.codigo_institucional == "8C-0457" and tipo == "falla":
@@ -269,19 +254,18 @@ class Command(BaseCommand):
         for asignacion in asignaciones:
             for revision in asignacion.revisiones.order_by("fecha_programada"):
                 if revision.fecha_limite >= hoy_:
-                    continue  # pendientes: las ejecutará el bombero
+                    continue
                 azar = random.random()
                 if azar < 0.06:
-                    continue  # quedará vencida
+                    continue
                 demora = random.randint(0, (revision.fecha_limite - revision.fecha_programada).days)
                 if azar > 0.94:
-                    demora += 2  # realizada fuera de plazo
+                    demora += 2
                 dia = min(revision.fecha_programada + timedelta(days=demora), hoy_ - timedelta(days=1))
                 cuando = datetime.combine(dia, time(random.randint(9, 19), random.randint(0, 59)), zona)
                 tipo = "observacion" if random.random() < 0.12 else "conforme"
                 self._ejecutar(revision, revision.responsables.first(), cuando, tipo)
 
-        # Hallazgos coherentes con el prototipo (D1 y M4).
         casos = [("8C-0457", "Sensor de CO marca 8 ppm en aire limpio y no vuelve a cero. Se retira el equipo de la "
                              "unidad H-8 hasta su calibración.", "alta", None),
                  ("8C-0233", "Cadena con desgaste en eslabones; requiere reemplazo.", "media", None),
@@ -293,7 +277,6 @@ class Command(BaseCommand):
             if revision is None:
                 continue
             if revision.estado == EstadoRevision.REALIZADA:
-                # Primero las fotos: fk_foto_resultado (RESTRICT) impide borrar un resultado con fotos.
                 revision.fotografias.all().delete()
                 revision.resultados.all().delete()
             cuando = datetime.combine(min(revision.fecha_limite, hoy_ - timedelta(days=1)), time(10, 30), zona)

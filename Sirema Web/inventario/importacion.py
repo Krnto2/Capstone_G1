@@ -1,15 +1,3 @@
-"""
-Carga masiva de material desde CSV o XLSX (CU-B1, curso alternativo 3.a).
-
-Cada fila se valida con las mismas reglas del formulario. Las válidas se
-registran (cada una en su propia transacción) y las rechazadas se informan
-con su número de fila y el motivo.
-
-Para migrar el inventario anterior, la carga puede crear las categorías,
-unidades (carros) y cajoneras que aún no existan. Los nombres se comparan sin
-distinguir mayúsculas, tildes ni espacios repetidos, para no duplicar catálogos.
-Si una fila se rechaza, los catálogos creados por ella se deshacen.
-"""
 import csv
 import io
 import re
@@ -54,7 +42,6 @@ class ResultadoImportacion:
 
 
 def clave(texto):
-    """«  Cabina  Tripulación » y «CABINA TRIPULACION» son la misma cajonera."""
     texto = unicodedata.normalize("NFKD", str(texto or "")).encode("ascii", "ignore").decode()
     return re.sub(r"\s+", " ", texto).strip().lower()
 
@@ -64,20 +51,17 @@ def _limpio(texto):
 
 
 class Catalogos:
-    """Busca (y opcionalmente crea) categorías, unidades y cajoneras con caché en memoria."""
-
     def __init__(self, crear, usuario, resultado):
         self.crear, self.usuario, self.resultado = crear, usuario, resultado
         self.categorias = {clave(c.nombre): c for c in Categoria.objects.all()}
         self.unidades = {}
         for u in Unidad.objects.all():
             self.unidades.setdefault(clave(u.codigo), u)
-        for u in Unidad.objects.all():  # también por nombre, si no choca con un código
+        for u in Unidad.objects.all():
             self.unidades.setdefault(clave(u.nombre), u)
         self.cajoneras = {(c.unidad_id, clave(c.nombre)): c for c in Cajonera.objects.all()}
         self._fila = []
 
-    # Una fila rechazada deshace sus catálogos en la base (transacción) y aquí (caché).
     def iniciar_fila(self):
         self._fila = []
 
@@ -112,7 +96,7 @@ class Catalogos:
     def unidad(self, codigo, errores):
         existente = self.unidades.get(clave(codigo))
         if existente or not self.crear:
-            return existente  # sin crear, el error se informa como cajonera inexistente
+            return existente
         codigo = _limpio(codigo).upper()
         if len(codigo) > LARGO_UNIDAD:
             errores.append(f"el código de la unidad «{codigo}» supera {LARGO_UNIDAD} caracteres")
@@ -168,7 +152,7 @@ def leer_filas(archivo):
     if nombre.endswith(".xlsx"):
         try:
             return _leer_xlsx(contenido)
-        except Exception as exc:  # openpyxl lanza varios tipos según el daño del archivo
+        except Exception as exc:
             raise ValidationError("No se pudo leer la planilla XLSX.") from exc
     if nombre.endswith(".csv"):
         return _leer_csv(contenido)

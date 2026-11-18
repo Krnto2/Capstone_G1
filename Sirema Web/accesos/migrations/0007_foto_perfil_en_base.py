@@ -1,9 +1,3 @@
-"""
-La foto de perfil pasa del volumen media a la base de datos.
-
-Las fotos cuyo archivo ya no existe no se pueden recuperar: esos usuarios vuelven a
-mostrar sus iniciales hasta que suban una nueva.
-"""
 import hashlib
 import io
 

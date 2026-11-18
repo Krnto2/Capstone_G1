@@ -1,10 +1,3 @@
-"""
-Tipos enumerados del modelo relacional (sección 3).
-
-Se implementan como columnas de texto con una restricción CHECK por columna
-(ver `restriccion_enum`), que da la misma garantía de integridad que un ENUM de
-PostgreSQL y es compatible con las migraciones de Django.
-"""
 from django.db import models
 from django.db.models import Q
 
@@ -81,7 +74,6 @@ class AccionAuditoria(models.TextChoices):
 
 
 def restriccion_enum(campo, enumeracion, nombre, nulo=False):
-    """CHECK que limita `campo` a los valores de `enumeracion`."""
     condicion = Q(**{f"{campo}__in": enumeracion.values})
     if nulo:
         condicion |= Q(**{f"{campo}__isnull": True})

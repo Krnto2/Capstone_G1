@@ -111,8 +111,8 @@ ingreso no muestra los usuarios de prueba: están en la sección «Usuarios de d
 | Contenedor | Imagen | Función |
 |---|---|---|
 | `sirema-proxy` | nginx:1.27-alpine | HTTPS (443, y 80 que redirige), estáticos, fotos con X-Accel-Redirect |
-| `sirema-web` | sirema-web:0.9.0 | Django + Gunicorn (puerto 8000 interno); migra y crea el primer administrador |
-| `sirema-scheduler` | sirema-web:0.9.0 | cron: `generar_revisiones` 05:30, `emitir_avisos` cada hora, `respaldo_diario` 03:00 |
+| `sirema-web` | sirema-web:0.9.1 | Django + Gunicorn (puerto 8000 interno); migra y crea el primer administrador |
+| `sirema-scheduler` | sirema-web:0.9.1 | cron: `generar_revisiones` 05:30, `emitir_avisos` cada hora, `respaldo_diario` 03:00 |
 | `sirema-db` | postgres:16 | Base de datos (puerto 5432 solo interno) |
 
 Volúmenes: `pgdata`, `media` (fotografías), `static` y `respaldos`. Todos los servicios usan
@@ -202,4 +202,4 @@ las ejecuta sobre PostgreSQL 16 y exige al menos 70 %.
 - Se agregó `UNIQUE (id_asignacion, fecha_programada)` en `revision` y el usuario técnico «sistema»
   (DAS 4.2.5).
 
-Versión del software: **0.9.0** (versión candidata para pruebas de aceptación, DAS 9.2).
+Versión del software: **0.9.1** (versión candidata para pruebas de aceptación, DAS 9.2).

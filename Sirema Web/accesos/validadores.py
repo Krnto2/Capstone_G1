@@ -2,8 +2,6 @@ from django.core.exceptions import ValidationError
 
 
 class RequisitosContrasena:
-    """Al menos una mayúscula, un número y un carácter especial."""
-
     TEXTO = "Debe tener al menos una mayúscula, un número y un carácter especial."
 
     def validate(self, password, user=None):

@@ -1,11 +1,3 @@
-"""
-Exportación del reporte de cumplimiento (CU-C15, RF-10): PDF, XLSX y CSV.
-
-El PDF se genera con WeasyPrint a partir de una plantilla HTML. WeasyPrint
-necesita las bibliotecas Pango del sistema, incluidas en la imagen Docker; si
-no están (por ejemplo, en un equipo Windows de desarrollo) se entrega la misma
-plantilla lista para imprimir o guardar como PDF desde el navegador.
-"""
 import base64
 import csv
 import io
@@ -18,7 +10,7 @@ from django.contrib.staticfiles import finders
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .excel import exportar_xlsx  # noqa: F401  (diseño propio en reportes/excel.py)
+from .excel import exportar_xlsx  # noqa: F401
 
 ENCABEZADOS = ["Código", "Elemento", "Categoría", "Ubicación", "Plan", "Responsable", "Fecha programada",
                "Fecha límite", "Estado", "Resultado", "Ejecutada por", "Fecha de ejecución", "En plazo"]
@@ -64,13 +56,11 @@ def exportar_csv(indicadores, revisiones):
 
 @lru_cache(maxsize=1)
 def _logo_data_uri():
-    """Emblema incrustado en el HTML: sirve igual para WeasyPrint y para la vista imprimible."""
     ruta = finders.find("img/logo-8.png")
     return "data:image/png;base64," + base64.b64encode(Path(ruta).read_bytes()).decode() if ruta else ""
 
 
 def _fuentes_oswald():
-    """Rutas de Oswald: archivo local para WeasyPrint; la vista imprimible usa las URL estáticas."""
     rutas = {}
     for peso in (500, 700):
         ruta = finders.find(f"vendor/oswald/oswald-latin-{peso}-normal.woff2")
@@ -87,7 +77,6 @@ def html_reporte(indicadores, revisiones, para_imprimir=False):
 
 
 def exportar_pdf(indicadores, revisiones):
-    """Devuelve (bytes, True) con WeasyPrint o (html, False) si no está disponible."""
     try:
         from weasyprint import HTML
     except (ImportError, OSError):

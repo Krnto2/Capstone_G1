@@ -1,10 +1,8 @@
-"""Emisión de notificaciones internas (RF-09). No hay envío de correo ni SMS."""
 from accesos.models import Usuario
 from nucleo.enums import TipoNotificacion
 
 from .models import Notificacion
 
-# Los destinatarios «jefatura» son quienes pueden consultar el panel de cumplimiento.
 PERMISO_JEFATURA = "panel.consultar"
 
 
@@ -13,7 +11,6 @@ def jefatura():
 
 
 def notificar(usuario, tipo, mensaje, revision=None, unica=False):
-    """Crea un aviso. Con `unica`, no repite el mismo tipo para el mismo usuario y revisión."""
     if usuario is None or not usuario.activo:
         return None
     if unica and Notificacion.objects.filter(usuario=usuario, tipo=tipo, revision=revision).exists():

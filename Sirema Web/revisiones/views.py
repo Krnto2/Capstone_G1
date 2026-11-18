@@ -18,12 +18,8 @@ from .forms import (FiltroHallazgos, FiltroRevisiones, FormsetPuntos, Formulario
                     FormularioFinalizar, FormularioMotivo, FormularioPlan, FormularioResponsables)
 from .models import AsignacionPlan, Fotografia, Hallazgo, Notificacion, PlanRevision, Revision
 
-# ------------------------------------------------------------ Revisiones ----
-
 
 class MisRevisionesView(PermisoRequeridoMixin, TemplateView):
-    """CU-C6 Consultar revisiones pendientes (pantalla M2)."""
-
     permiso_requerido = "revision.ejecutar"
     template_name = "revisiones/mis_revisiones.html"
 
@@ -45,8 +41,6 @@ class MisRevisionesView(PermisoRequeridoMixin, TemplateView):
 
 
 class RevisionListaView(PermisoRequeridoMixin, ListView):
-    """Todas las revisiones, para la jefatura."""
-
     permiso_requerido = "revision.supervisar"
     template_name = "revisiones/revision_lista.html"
     context_object_name = "revisiones"
@@ -103,8 +97,6 @@ class RevisionDetalleView(DetailView):
 
 
 class EjecutarView(PermisoRequeridoMixin, View):
-    """CU-C7 Ejecutar revisión (pantalla M3)."""
-
     permiso_requerido = "revision.ejecutar"
     template_name = "revisiones/ejecutar.html"
 
@@ -133,8 +125,6 @@ class EjecutarView(PermisoRequeridoMixin, View):
 
 
 class FinalizarView(PermisoRequeridoMixin, View):
-    """CU-C7 pasos 5 a 7 y CU-C12 Registrar hallazgo (pantalla M4)."""
-
     permiso_requerido = "revision.ejecutar"
     template_name = "revisiones/finalizar.html"
 
@@ -211,11 +201,7 @@ class ReasignarView(PermisoRequeridoMixin, View):
         return render(request, self.template_name, {"revision": revision, "form": form})
 
 
-# ----------------------------------------------------------- Fotografías ----
-
 class FotografiaView(View):
-    """Entrega protegida: Django verifica el permiso y Nginx sirve el archivo (X-Accel-Redirect)."""
-
     def get(self, request, pk):
         foto = get_object_or_404(Fotografia.objects.select_related("revision"), pk=pk)
         if not services.puede_ver(foto.revision, request.user):
@@ -234,8 +220,6 @@ class FotografiaView(View):
 
 
 class AnularFotografiaView(PermisoRequeridoMixin, View):
-    """CU-C11 Anular fotografía."""
-
     permiso_requerido = "fotografia.anular"
     template_name = "revisiones/anular_foto.html"
 
@@ -259,8 +243,6 @@ class AnularFotografiaView(PermisoRequeridoMixin, View):
                                                     "integra": ServicioAlmacenamiento().verificar(foto)})
 
 
-# ---------------------------------------------------------------- Planes ----
-
 class PlanListaView(PermisoRequeridoMixin, ListView):
     permiso_requerido = "plan.administrar"
     template_name = "revisiones/plan_lista.html"
@@ -276,8 +258,6 @@ class PlanListaView(PermisoRequeridoMixin, ListView):
 
 
 class PlanFormView(PermisoRequeridoMixin, View):
-    """CU-C1 Definir plan de revisión, que incluye CU-C2 Definir puntos de control."""
-
     permiso_requerido = "plan.administrar"
     template_name = "revisiones/plan_form.html"
 
@@ -342,8 +322,6 @@ class PlanDesactivarView(PermisoRequeridoMixin, View):
         return redirect("revisiones:planes")
 
 
-# --------------------------------------------------------- Asignaciones ----
-
 class AsignacionListaView(PermisoRequeridoMixin, ListView):
     permiso_requerido = "asignacion.administrar"
     template_name = "revisiones/asignacion_lista.html"
@@ -368,8 +346,6 @@ class AsignacionListaView(PermisoRequeridoMixin, ListView):
 
 
 class AsignacionCrearView(PermisoRequeridoMixin, View):
-    """CU-C3 Asignar planes a uno o varios elementos, a cargo de uno o varios bomberos."""
-
     permiso_requerido = "asignacion.administrar"
     template_name = "revisiones/asignacion_form.html"
 
@@ -401,8 +377,6 @@ class AsignacionCrearView(PermisoRequeridoMixin, View):
 
 
 class AsignacionResponsablesView(PermisoRequeridoMixin, View):
-    """Suma o quita bomberos de una asignación vigente y de sus revisiones abiertas."""
-
     permiso_requerido = "asignacion.administrar"
     template_name = "revisiones/asignacion_responsables.html"
 
@@ -444,8 +418,6 @@ class AsignacionCerrarView(PermisoRequeridoMixin, View):
         return redirect("revisiones:asignaciones")
 
 
-# ------------------------------------------------------------- Hallazgos ----
-
 class HallazgoListaView(PermisoRequeridoMixin, ListView):
     permiso_requerido = "hallazgo.gestionar"
     template_name = "revisiones/hallazgo_lista.html"
@@ -473,8 +445,6 @@ class HallazgoListaView(PermisoRequeridoMixin, ListView):
 
 
 class HallazgoDetalleView(View):
-    """CU-C13 Cerrar hallazgo."""
-
     template_name = "revisiones/hallazgo_detalle.html"
 
     def _hallazgo(self, request, pk):
@@ -509,11 +479,7 @@ class HallazgoDetalleView(View):
         return render(request, self.template_name, {"hallazgo": hallazgo, "form": form})
 
 
-# -------------------------------------------------------- Notificaciones ----
-
 class NotificacionListaView(ListView):
-    """CU-A3 Consultar notificaciones."""
-
     template_name = "revisiones/notificacion_lista.html"
     context_object_name = "notificaciones"
     paginate_by = 30
@@ -524,8 +490,6 @@ class NotificacionListaView(ListView):
 
 
 class NotificacionAbrirView(View):
-    """Abrir un aviso lo marca como leído con su fecha (RF-09)."""
-
     def get(self, request, pk):
         aviso = get_object_or_404(Notificacion.objects.select_related("revision"), pk=pk, usuario=request.user)
         aviso.marcar_leida()
@@ -548,4 +512,3 @@ class MarcarTodasLeidasView(View):
             leida=True, fecha_lectura=timezone.now())
         messages.success(request, f"{total} avisos marcados como leídos.")
         return redirect("revisiones:notificaciones")
-

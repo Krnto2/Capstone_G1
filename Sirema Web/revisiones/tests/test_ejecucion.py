@@ -1,4 +1,3 @@
-"""CP-08 Ejecución de revisiones, CP-11 Evidencia fotográfica y CP-12 Hallazgos."""
 import json
 from datetime import timedelta
 
@@ -29,7 +28,7 @@ class TestCP08Ejecucion:
         assert revision.estado == EstadoRevision.EN_CURSO and revision.fecha_hora_inicio
         assert registro.valor_registrado == "8.5"
         services.registrar_resultado(revision, punto, bombero, "falla", "12", "Válvula no regula")
-        assert revision.resultados.count() == 1  # clave compuesta: una respuesta por punto
+        assert revision.resultados.count() == 1
 
     def test_observacion_o_falla_exigen_comentario(self, revision, bombero):
         punto = revision.plan.puntos.get(numero_orden=1)
@@ -47,7 +46,7 @@ class TestCP08Ejecucion:
     def test_no_finaliza_con_puntos_obligatorios_sin_responder(self, revision, bombero):
         with pytest.raises(services.ErrorRevision) as error:
             services.finalizar(revision, bombero)
-        assert len(error.value.faltantes.puntos) == 2  # el tercero es opcional
+        assert len(error.value.faltantes.puntos) == 2
 
     def test_resultado_global_y_bitacora(self, revision, bombero):
         responder_todo(revision, bombero)
@@ -132,7 +131,7 @@ class TestCP11Fotografias:
     def test_entrega_protegida_de_fotografias(self, client, revision, bombero, imagen):
         foto = services.adjuntar_fotografia(revision, imagen(), bombero)
         url = reverse("revisiones:fotografia", args=[foto.pk])
-        assert client.get(url).status_code == 302  # sin sesión
+        assert client.get(url).status_code == 302
         client.force_login(bombero)
         respuesta = client.get(url)
         assert respuesta.status_code == 200 and respuesta["Content-Type"] == "image/jpeg"

@@ -1,11 +1,3 @@
-"""
-Observadores del módulo de revisiones.
-
-- Baja de un elemento (señal del inventario): cierra sus asignaciones y deja
-  no realizadas sus revisiones abiertas (RF-03).
-- Proveedor de la ficha de material: aporta revisiones y hallazgos al
-  historial del elemento (CU-B6).
-"""
 from datetime import datetime, time
 
 from django.dispatch import receiver

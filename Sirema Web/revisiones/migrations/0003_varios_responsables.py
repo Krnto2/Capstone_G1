@@ -1,9 +1,3 @@
-"""
-Una asignación y una revisión pueden tener varios responsables.
-
-El responsable único de cada fila pasa a las tablas nuevas, así que nadie pierde
-sus revisiones. Al revertir, cada fila conserva solo a uno de sus responsables.
-"""
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
@@ -24,7 +18,6 @@ def restaurar_responsable(apps, schema_editor):
         schema_editor.execute(f"UPDATE {origen} SET id_usuario_responsable = (SELECT MIN(r.id_usuario) "
                               f"FROM {destino} r WHERE r.{clave} = {origen}.{clave})")
     if schema_editor.connection.vendor == "postgresql":
-        # PostgreSQL no altera una tabla con verificaciones de claves foráneas pendientes.
         schema_editor.execute("SET CONSTRAINTS ALL IMMEDIATE")
 
 
@@ -59,7 +52,6 @@ class Migration(migrations.Migration):
             ],
             options={"db_table": "revision_responsable"},
         ),
-        # Nulo mientras dura la copia: permite revertir la migración con datos.
         migrations.AlterField(
             model_name="revision",
             name="usuario_responsable",

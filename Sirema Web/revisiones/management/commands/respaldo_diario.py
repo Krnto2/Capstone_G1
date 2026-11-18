@@ -1,10 +1,3 @@
-"""
-RNF-05: respaldo diario de la base de datos y de las fotografías.
-
-Genera un .zip completo (ver nucleo/respaldos.py) y conserva 30 respaldos diarios y
-12 mensuales (el del día 1 de cada mes) en el volumen respaldos. El administrador
-los ve, descarga y restaura desde Administración › Respaldos.
-"""
 import shutil
 
 from django.conf import settings

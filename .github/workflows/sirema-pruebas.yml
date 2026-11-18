@@ -1,5 +1,3 @@
-# Integración continua de SIREMA (carpeta «Sirema Web»): pruebas sobre PostgreSQL 16
-# y cobertura mínima de 70 % (RNF-07).
 name: SIREMA · pruebas
 
 on:

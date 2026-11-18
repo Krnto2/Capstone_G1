@@ -1,4 +1,3 @@
-# RNF-10: fechas en formato dd-mm-aaaa en toda la interfaz.
 DATE_FORMAT = "d-m-Y"
 SHORT_DATE_FORMAT = "d-m-Y"
 DATETIME_FORMAT = "d-m-Y H:i"

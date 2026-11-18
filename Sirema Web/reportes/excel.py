@@ -1,14 +1,3 @@
-"""
-Reporte de cumplimiento en XLSX con la identidad de la Octava Compañía (CU-C15).
-
-Replica el diseño del PDF: emblema, franja negra y roja, indicadores con color,
-encabezados de tabla negros y filas alternadas. Las fechas se escriben como
-fechas reales de Excel para poder ordenar y filtrar, y cada hoja queda lista
-para imprimir en horizontal.
-
-Los títulos usan Arial Narrow (incluida en Office), equivalente condensado de
-la Oswald de la interfaz, que no viene instalada en los computadores.
-"""
 import io
 
 from django.conf import settings
@@ -35,7 +24,6 @@ BORDE_CELDA = Border(bottom=Side(style="thin", color="E1E4E8"))
 
 
 def _fecha(valor):
-    """Excel no admite zonas horarias: se escribe la hora local de Chile."""
     if valor is None:
         return None
     if hasattr(valor, "tzinfo") and valor.tzinfo is not None:
@@ -54,7 +42,6 @@ def _logo(hoja, alto_px=62):
 
 
 def _cabecera(hoja, titulo, filtros, ultima_col):
-    """Emblema, compañía, título, filtros y franja negra y roja (filas 1 a 5)."""
     letra_fin = get_column_letter(ultima_col)
     _logo(hoja)
     hoja.row_dimensions[1].height = 18
@@ -94,7 +81,6 @@ def _preparar_impresion(hoja, filas_titulo=None):
 
 
 def _encabezado_tabla(hoja, fila, columnas):
-    """columnas: lista de (texto, columna_inicial, columna_final)."""
     hoja.row_dimensions[fila].height = 22
     for texto, desde, hasta in columnas:
         if hasta > desde:
@@ -114,10 +100,7 @@ def _titulo_seccion(hoja, fila, texto):
     celda.border = Border(left=Side(style="thick", color=AZUL))
 
 
-# ---------------------------------------------------------------- Resumen ----
-
 def _tarjeta(hoja, col, etiqueta, valor, detalle, color, formato=None):
-    """Indicador en dos columnas (filas 7 a 10), con franja superior de color."""
     hoja.merge_cells(start_row=8, start_column=col, end_row=8, end_column=col + 1)
     hoja.merge_cells(start_row=9, start_column=col, end_row=9, end_column=col + 1)
     hoja.merge_cells(start_row=10, start_column=col, end_row=10, end_column=col + 1)
@@ -210,10 +193,7 @@ def _hoja_resumen(libro, ind):
     _preparar_impresion(hoja)
 
 
-# ---------------------------------------------------------- Hojas de datos ----
-
 def _hoja_tabla(libro, titulo, etiqueta_filtros, columnas, filas, color_pestana, estilo_celda=None):
-    """columnas: lista de (encabezado, ancho, formato_numero)."""
     hoja = libro.create_sheet(titulo)
     hoja.sheet_properties.tabColor = color_pestana
     n = len(columnas)
@@ -231,7 +211,7 @@ def _hoja_tabla(libro, titulo, etiqueta_filtros, columnas, filas, color_pestana,
             celda.font = Font(name=CUERPO, size=10)
             celda.border = BORDE_CELDA
             formato = columnas[col - 1][2]
-            if formato:  # fechas centradas, para que no se peguen a la columna vecina
+            if formato:
                 celda.number_format = formato
                 celda.alignment = Alignment(vertical="center", horizontal="center")
             else:

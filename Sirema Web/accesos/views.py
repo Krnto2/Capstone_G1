@@ -29,13 +29,10 @@ from .forms import (FiltroBitacora, FiltroUsuarios, FormularioCambioContrasena, 
 from .models import EventoAuditoria, FotoPerfil, Permiso, Rol, RolPermiso, Usuario
 from .permisos import PermisoRequeridoMixin
 
-# Permisos que el rol administrador conserva siempre, para no perder el acceso.
 PERMISOS_PROTEGIDOS_ADMIN = {"usuario.administrar", "permiso.administrar", "respaldo.administrar"}
 
 
 class IngresarView(auth_views.LoginView):
-    """CU-A1 Iniciar sesión (pantalla M1)."""
-
     template_name = "registration/login.html"
     authentication_form = FormularioIngreso
     redirect_authenticated_user = True
@@ -58,8 +55,6 @@ class PerfilView(TemplateView):
 
 
 class PerfilEditarView(View):
-    """El titular actualiza sus datos. El RUT y el rol los cambia el administrador."""
-
     template_name = "accesos/perfil_form.html"
 
     def get(self, request):
@@ -81,13 +76,10 @@ class PerfilEditarView(View):
 
     @staticmethod
     def _usuario(request):
-        # Copia aparte: un formulario con errores no debe alterar al usuario de la sesión.
         return Usuario.objects.get(pk=request.user.pk)
 
 
 class CambiarContrasenaView(auth_views.PasswordChangeView):
-    """CU-A2 Cambiar contraseña propia."""
-
     template_name = "accesos/cambiar_contrasena.html"
     form_class = FormularioCambioContrasena
     success_url = reverse_lazy("accesos:perfil")
@@ -101,8 +93,6 @@ class CambiarContrasenaView(auth_views.PasswordChangeView):
 
 
 class FotoPerfilView(View):
-    """La foto la ve el titular o quien administra usuarios."""
-
     def get(self, request, pk):
         if request.user.pk != pk and not request.user.tiene_permiso("usuario.administrar"):
             raise PermissionDenied
@@ -113,8 +103,6 @@ class FotoPerfilView(View):
 
 
 class FotoPerfilSubirView(View):
-    """CU-A2: el titular sube o reemplaza su foto de perfil."""
-
     def post(self, request):
         form = FormularioFotoPerfil(request.POST, request.FILES)
         if not form.is_valid():
@@ -135,8 +123,6 @@ class FotoPerfilSubirView(View):
 
 
 class FotoPerfilEliminarView(View):
-    """El titular quita su foto y vuelve a las iniciales."""
-
     def post(self, request):
         if request.user.tiene_foto:
             with transaction.atomic():
@@ -147,11 +133,7 @@ class FotoPerfilEliminarView(View):
         return redirect("accesos:perfil")
 
 
-# ------------------------------------------------------------- Usuarios ----
-
 class UsuarioListaView(PermisoRequeridoMixin, ListView):
-    """CU-A4 Administrar usuarios."""
-
     permiso_requerido = "usuario.administrar"
     template_name = "accesos/usuario_lista.html"
     context_object_name = "usuarios"
@@ -166,8 +148,6 @@ class UsuarioListaView(PermisoRequeridoMixin, ListView):
                 q = datos["q"].strip()
                 condicion = (Q(nombre__icontains=q) | Q(apellidos__icontains=q) | Q(rut__icontains=q)
                              | Q(correo__icontains=q))
-                # El RUT se guarda como 12.345.678-9: se compara sin puntos, guion ni mayúsculas,
-                # para encontrarlo escrito de cualquier forma (123456789, 12345678-9, 12.345.678-9).
                 rut_buscado = limpiar_rut(q)
                 if any(c.isdigit() for c in rut_buscado):
                     usuarios = usuarios.annotate(rut_limpio=Upper(Replace(Replace(
@@ -201,8 +181,6 @@ class UsuarioCrearView(PermisoRequeridoMixin, CreateView):
 
 
 class UsuarioEditarView(PermisoRequeridoMixin, UpdateView):
-    """CU-A4 y CU-A5 Asignar rol a usuario."""
-
     permiso_requerido = "usuario.administrar"
     model = Usuario
     form_class = FormularioUsuario
@@ -224,8 +202,6 @@ class UsuarioEditarView(PermisoRequeridoMixin, UpdateView):
 
 
 class UsuarioEstadoView(PermisoRequeridoMixin, View):
-    """Desactivar o reactivar una cuenta (RF-01)."""
-
     permiso_requerido = "usuario.administrar"
 
     def post(self, request, pk):
@@ -248,8 +224,6 @@ class UsuarioEstadoView(PermisoRequeridoMixin, View):
 
 
 class UsuarioContrasenaView(PermisoRequeridoMixin, FormView):
-    """El administrador restablece la contraseña de un usuario."""
-
     permiso_requerido = "usuario.administrar"
     template_name = "accesos/usuario_contrasena.html"
     form_class = FormularioRestablecerContrasena
@@ -274,11 +248,7 @@ class UsuarioContrasenaView(PermisoRequeridoMixin, FormView):
         return super().get_context_data(usuario_objetivo=self.usuario, **kwargs)
 
 
-# ------------------------------------------------------------- Permisos ----
-
 class PermisosRolView(PermisoRequeridoMixin, View):
-    """CU-A6 Administrar permisos por rol."""
-
     permiso_requerido = "permiso.administrar"
     template_name = "accesos/permisos_rol.html"
 
@@ -326,11 +296,7 @@ class PermisosRolView(PermisoRequeridoMixin, View):
         return redirect("accesos:permisos")
 
 
-# ------------------------------------------------------------- Bitácora ----
-
 class BitacoraView(PermisoRequeridoMixin, ListView):
-    """CU-A7 Consultar bitácora de auditoría (solo lectura)."""
-
     permiso_requerido = "auditoria.consultar"
     template_name = "accesos/bitacora.html"
     context_object_name = "eventos"
@@ -358,11 +324,7 @@ class BitacoraView(PermisoRequeridoMixin, ListView):
         return super().get_context_data(filtro=self.filtro, **kwargs)
 
 
-# ------------------------------------------------------------- Respaldos ----
-
 class RespaldosView(PermisoRequeridoMixin, View):
-    """RNF-05: el administrador genera, descarga y restaura respaldos completos."""
-
     permiso_requerido = "respaldo.administrar"
     template_name = "accesos/respaldos.html"
 
@@ -414,8 +376,6 @@ class RespaldoEliminarView(PermisoRequeridoMixin, View):
 
 
 class RespaldoRestaurarView(PermisoRequeridoMixin, View):
-    """Reemplaza todos los datos por los del respaldo. Antes guarda una copia del estado actual."""
-
     permiso_requerido = "respaldo.administrar"
 
     def post(self, request):
@@ -433,7 +393,6 @@ class RespaldoRestaurarView(PermisoRequeridoMixin, View):
                 form.add_error(None, str(exc))
                 return RespaldosView.pantalla(request, form, status=400)
 
-        # La base restaurada trae sus propias sesiones: se cierran todas, también la actual.
         Session.objects.all().delete()
         usuario = Usuario.objects.filter(correo__iexact=correo).first() or auditoria.usuario_sistema()
         auditoria.registrar(AccionAuditoria.MODIFICACION, "respaldo", nombre, usuario=usuario, ip=ip,

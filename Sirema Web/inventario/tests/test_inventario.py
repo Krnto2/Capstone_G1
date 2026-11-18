@@ -1,4 +1,3 @@
-"""CP-03 a CP-06: material, código único, búsqueda y movimientos."""
 import pytest
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -77,7 +76,7 @@ class TestCP05Busqueda:
         services.registrar_material({"codigo_institucional": "8C-0457", "nombre": "Detector multigas",
                                      "categoria": catalogo["hazmat"], "cajonera": catalogo["h8_caj3"],
                                      "tipo": "unitario"}, jefatura)
-        assert Material.objects.buscar("d").count() == 2  # un carácter no filtra
+        assert Material.objects.buscar("d").count() == 2
         assert list(Material.objects.buscar("multi").values_list("codigo_institucional", flat=True)) == ["8C-0457"]
         assert Material.objects.buscar("0112").get() == material
 
@@ -128,7 +127,6 @@ class TestCargaMasivaCreaCatalogos:
                      "8C-0302;Llave;Herramientas;B-8;Cajonera 2;unitario;1\n")
         resultado = self._cargar(contenido, jefatura)
         assert len(resultado.registrados) == 4 and not resultado.rechazados
-        # Sin duplicar por mayúsculas, tildes ni espacios repetidos
         assert Categoria.objects.filter(nombre__iexact="respiración").count() == 1
         assert Cajonera.objects.filter(unidad__codigo="B-8", nombre__icontains="tripula").count() == 1
         assert Unidad.objects.filter(codigo="BX-8").exists()

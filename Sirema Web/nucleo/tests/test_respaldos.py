@@ -1,4 +1,3 @@
-"""RNF-05: respaldos manuales, descarga y restauración completa desde la pantalla del administrador."""
 import io
 import json
 import zipfile
@@ -33,7 +32,6 @@ def cliente_admin(administrador):
 
 @pytest.fixture
 def bitacora_limpiable():
-    """Las pruebas con transacciones reales dejan filas en la bitácora inmutable: se limpian al final."""
     yield
     if connection.vendor != "sqlite":
         return
@@ -131,7 +129,7 @@ class TestValidacionRestauracion:
         assert respuesta.status_code == 400
         assert mensaje in " ".join(respuesta.context["form"].non_field_errors())
         assert Usuario.objects.count() == usuarios
-        assert respaldos.listar() == []  # no se generó la copia previa
+        assert respaldos.listar() == []
 
     def test_rechaza_un_archivo_que_no_es_zip(self, cliente_admin):
         archivo = SimpleUploadedFile("respaldo.zip", b"no soy un zip")
@@ -153,7 +151,6 @@ class TestRestauracionCompleta:
         descargado = b"".join(cliente.get(reverse("accesos:respaldo_descargar",
                                                   args=["manuales", respaldo.nombre])).streaming_content)
 
-        # Cambios posteriores que la restauración debe deshacer.
         Categoria.objects.create(nombre="Después del respaldo")
         (media / "evidencias" / "nueva.jpg").write_bytes(b"nueva")
         (media / "evidencias" / "original.jpg").unlink()
@@ -168,7 +165,7 @@ class TestRestauracionCompleta:
         assert (media / "evidencias" / "original.jpg").read_bytes() == b"original"
         assert not (media / "evidencias" / "nueva.jpg").exists()
         assert not Session.objects.exists()
-        assert cliente.get(reverse("accesos:respaldos")).status_code == 302  # debe ingresar de nuevo
+        assert cliente.get(reverse("accesos:respaldos")).status_code == 302
         assert any("antes_de_restaurar" in r.nombre for r in respaldos.listar())
         assert EventoAuditoria.objects.filter(entidad_afectada="respaldo", accion="modificacion").exists()
 

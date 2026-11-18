@@ -1,4 +1,3 @@
-"""Permiso para generar, descargar y restaurar respaldos completos (solo administrador)."""
 from django.db import migrations
 
 CODIGO = "respaldo.administrar"

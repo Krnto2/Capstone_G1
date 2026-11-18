@@ -1,9 +1,7 @@
-# SIREMA · despliegue en el servidor del cuartel (DAS 4.5, Figura 12).
-# Cuatro contenedores en la red interna sirema_net; solo el proxy publica puertos.
 name: sirema
 
 x-app: &app
-  image: sirema-web:0.9.0
+  image: sirema-web:0.9.1
   restart: unless-stopped
   env_file: .env
   environment:
@@ -40,7 +38,6 @@ services:
     volumes:
       - media:/media
       - static:/static
-      # El administrador genera, descarga y restaura respaldos desde la web.
       - respaldos:/respaldos
     depends_on:
       sirema-db:

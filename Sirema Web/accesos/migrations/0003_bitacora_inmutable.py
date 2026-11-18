@@ -1,4 +1,3 @@
-"""RNF-09: un disparador rechaza cualquier UPDATE o DELETE sobre evento_auditoria."""
 from django.db import migrations
 
 POSTGRES = [

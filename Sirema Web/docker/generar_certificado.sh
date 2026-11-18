@@ -1,7 +1,4 @@
 #!/bin/sh
-# Genera el certificado TLS autofirmado para la red local del cuartel.
-# Uso: sh docker/generar_certificado.sh [nombre] [ip]
-#      sh docker/generar_certificado.sh sirema.local 192.168.1.10
 set -e
 NOMBRE="${1:-sirema.local}"
 IP="${2:-127.0.0.1}"

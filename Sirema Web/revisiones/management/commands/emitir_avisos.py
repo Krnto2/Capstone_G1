@@ -1,4 +1,3 @@
-"""CU-C5 Emitir notificación de vencimiento: marca vencidas y emite avisos."""
 from django.core.management.base import BaseCommand
 
 from revisiones.programador import ProgramadorRevisiones

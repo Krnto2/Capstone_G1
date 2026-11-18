@@ -1,15 +1,7 @@
-"""
-Roles, permisos y usuario técnico «sistema».
-
-Jefatura y Administrador heredan de Bombero (diagrama general de casos de
-uso): reciben todos sus permisos más los propios. El rol «consulta» se
-eliminó en la Fase 2 porque ningún integrante de la compañía lo cumple.
-"""
 from django.contrib.auth.hashers import make_password
 from django.db import migrations
 
 PERMISOS = [
-    # (código, nombre, módulo)
     ("usuario.administrar", "Administrar usuarios y asignar roles", "accesos"),
     ("permiso.administrar", "Administrar permisos por rol", "accesos"),
     ("auditoria.consultar", "Consultar bitácora de auditoría", "accesos"),
@@ -57,7 +49,6 @@ def cargar(apps, schema_editor):
         RolPermiso.objects.bulk_create([RolPermiso(rol=rol, permiso=permisos[c]) for c in codigos
                                         if permisos[c].pk not in existentes])
 
-    # Las acciones automáticas se atribuyen a «sistema», sin credenciales (DAS 4.2.5).
     if not Usuario.objects.filter(correo="sistema@sirema.local").exists():
         Usuario.objects.create(correo="sistema@sirema.local", rut="SISTEMA", nombre="Sistema", apellidos="SIREMA",
                                rol=Rol.objects.get(nombre="bombero"), activo=False, password=make_password(None))

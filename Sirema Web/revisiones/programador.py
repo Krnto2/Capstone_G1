@@ -1,11 +1,3 @@
-"""
-ProgramadorRevisiones (CU-C4 y CU-C5), ejecutado a diario por cron en el
-contenedor sirema-scheduler mediante el comando generar_revisiones.
-
-Es idempotente: la restricción única (id_asignacion, fecha_programada) impide
-duplicar revisiones, de modo que puede repetirse y, si el servidor estuvo
-apagado, recorre las fechas omitidas sin crear duplicados (curso 1.a).
-"""
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
@@ -45,7 +37,6 @@ class ProgramadorRevisiones:
         return self.fecha + timedelta(days=self.anticipacion)
 
     def generar_para(self, asignacion):
-        """Crea las revisiones de una asignación hasta el horizonte. Devuelve las creadas."""
         material = asignacion.material
         if not asignacion.activa or material.estado != EstadoMaterial.ACTIVO:
             return []
@@ -56,7 +47,6 @@ class ProgramadorRevisiones:
         plan = asignacion.plan
         hasta = self.horizonte
         if asignacion.fecha_termino:
-            # Curso 2.a: al alcanzar la fecha de término no se generan revisiones nuevas.
             hasta = min(hasta, asignacion.fecha_termino)
         existentes = set(asignacion.revisiones.values_list("fecha_programada", flat=True))
         creadas = []
@@ -78,7 +68,7 @@ class ProgramadorRevisiones:
                         "fecha_limite": revision.fecha_limite,
                         "id_usuarios_responsables": sorted(u.pk for u in responsables)})
             except IntegrityError:
-                continue  # otra ejecución la creó primero
+                continue
             creadas.append(revision)
             for responsable in responsables:
                 notificaciones.notificar(
@@ -93,7 +83,6 @@ class ProgramadorRevisiones:
         return sum(len(self.generar_para(a)) for a in asignaciones)
 
     def marcar_vencidas(self):
-        """Paso 4: las revisiones abiertas cuya fecha límite ya pasó quedan vencidas."""
         vencidas = Revision.objects.filter(estado__in=[EstadoRevision.PENDIENTE, EstadoRevision.EN_CURSO],
                                            fecha_limite__lt=self.fecha)
         total = 0
@@ -109,7 +98,6 @@ class ProgramadorRevisiones:
 
     @staticmethod
     def _avisar(revision, tipo, mensaje):
-        """Avisa a cada responsable y, indicando quiénes son, a la jefatura."""
         responsables = list(revision.responsables.all())
         total = sum(bool(notificaciones.notificar(u, tipo, mensaje, revision, unica=True)) for u in responsables)
         titulo = "Responsable" if len(responsables) == 1 else "Responsables"
@@ -117,7 +105,6 @@ class ProgramadorRevisiones:
             tipo, f"{mensaje} {titulo}: {revision.responsables_cortos}.", revision, unica=True, excluir=responsables))
 
     def emitir_avisos(self):
-        """CU-C5: aviso 24 horas antes de la fecha límite y al vencer, con copia a la jefatura."""
         total = 0
         manana = self.fecha + timedelta(days=1)
         por_vencer = Revision.objects.completa().filter(

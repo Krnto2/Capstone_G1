@@ -32,8 +32,6 @@ class CampoMateriales(forms.ModelMultipleChoiceField):
 
 
 class FormularioPlan(FormularioModelo):
-    """CU-C1 Definir plan de revisión."""
-
     class Meta:
         model = PlanRevision
         fields = ["nombre", "descripcion", "frecuencia_valor", "frecuencia_unidad", "dias_tolerancia",
@@ -48,13 +46,10 @@ class FormularioPlan(FormularioModelo):
         }
 
     def validate_unique(self):
-        # La versión se asigna en el servicio, que mantiene único (nombre, versión).
         pass
 
 
 class FormularioPunto(Formulario):
-    """CU-C2 Definir puntos de control."""
-
     descripcion = forms.CharField(label="Acción a verificar", max_length=200,
                                   widget=forms.TextInput(attrs={"placeholder": "Ej.: Lectura de CO en aire limpio"}))
     tipo_dato = forms.ChoiceField(label="Tipo", choices=TipoDatoPunto.choices, initial=TipoDatoPunto.BOOLEANO)
@@ -101,8 +96,6 @@ FormsetPuntos = forms.formset_factory(FormularioPunto, formset=BaseFormsetPuntos
 
 
 class FormularioAsignacion(Formulario):
-    """CU-C3 Asignar planes a material: cada plan se aplica a cada elemento, con los mismos responsables."""
-
     materiales = CampoMateriales(label="Elementos", queryset=Material.objects.none(),
                                  error_messages={"required": "Seleccione al menos un elemento."})
     planes = forms.ModelMultipleChoiceField(label="Planes de revisión", queryset=PlanRevision.objects.none(),
@@ -135,8 +128,6 @@ class FormularioAsignacion(Formulario):
 
 
 class FormularioFinalizar(Formulario):
-    """CU-C7 paso 5 y CU-C12 Registrar hallazgo (pantalla M4)."""
-
     observaciones = forms.CharField(label="Observaciones generales", max_length=500, required=False,
                                     widget=forms.Textarea(attrs={"rows": 2}))
     descripcion = forms.CharField(label="Descripción del hallazgo", max_length=500, required=False,
@@ -167,8 +158,6 @@ class FormularioCierreHallazgo(Formulario):
 
 
 class FormularioResponsables(Formulario):
-    """Quiénes quedan a cargo de una revisión o de una asignación."""
-
     responsables = CampoUsuarios(label="Bomberos responsables", queryset=Usuario.objects.none(),
                                  error_messages={"required": "Seleccione al menos un bombero."})
 

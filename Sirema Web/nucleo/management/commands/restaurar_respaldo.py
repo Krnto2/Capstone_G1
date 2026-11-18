@@ -1,10 +1,3 @@
-"""
-Restaura un respaldo .zip de SIREMA desde la consola (cuando la web no está disponible).
-
-    python manage.py restaurar_respaldo /ruta/sirema_20261108_030000.zip
-
-Antes de restaurar guarda una copia de seguridad del estado actual en respaldos/manuales.
-"""
 from pathlib import Path
 
 from django.contrib.sessions.models import Session

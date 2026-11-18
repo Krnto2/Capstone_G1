@@ -1,4 +1,3 @@
-"""Observador: los inicios y cierres de sesión quedan en la bitácora (RNF-09)."""
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.dispatch import receiver
 
@@ -11,7 +10,6 @@ from .models import Usuario
 
 @receiver(user_logged_in)
 def inicio_sesion(sender, request, user, **kwargs):
-    # Cada ingreso es independiente: un usuario puede tener varias sesiones abiertas a la vez.
     auditoria.registrar(AccionAuditoria.ACCESO, "usuario", user.pk, nuevos={"evento": "inicio_sesion"}, usuario=user,
                         ip=ip_cliente(request))
 

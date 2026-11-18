@@ -1,11 +1,3 @@
-"""
-Exportación del inventario actual (material activo) a XLSX.
-
-Hoja «Inventario general»: resumen por unidad, matriz categoría × unidad y el
-detalle completo con autofiltro. Luego una hoja por unidad (carro o bodega) con
-su material seccionado por cajonera. Usa la misma identidad visual del reporte
-de cumplimiento (reportes/excel.py).
-"""
 import io
 import re
 from collections import Counter, defaultdict
@@ -83,8 +75,6 @@ def _nombre_hoja(texto, usados):
     return nombre
 
 
-# ------------------------------------------------------- Hoja general ----
-
 def _hoja_general(libro, materiales, unidades):
     hoja = libro.active
     hoja.title = "Inventario general"
@@ -95,7 +85,6 @@ def _hoja_general(libro, materiales, unidades):
               f"Material activo al {timezone.localtime():%d-%m-%Y} · {_cuenta(len(materiales), 'elemento')} · "
               f"{_cuenta(piezas, 'pieza')} · {_cuenta(len(unidades), 'unidad', 'unidades')}", len(DETALLE))
 
-    # Resumen por unidad
     fila = 7
     _titulo_seccion(hoja, fila, "Resumen por unidad")
     fila += 1
@@ -114,7 +103,6 @@ def _hoja_general(libro, materiales, unidades):
     fila += 1
     _fila_total(hoja, fila, ["Total", "", sum(cajoneras.get(u.pk, 0) for u in unidades), len(materiales), piezas])
 
-    # Matriz categoría × unidad (piezas)
     fila += 3
     _titulo_seccion(hoja, fila, "Piezas por categoría y unidad")
     fila += 1
@@ -146,7 +134,6 @@ def _hoja_general(libro, materiales, unidades):
     if not categorias:
         hoja.cell(row=fila - 1, column=1, value="Sin material activo.")
 
-    # Detalle completo
     fila += 3
     _titulo_seccion(hoja, fila, "Detalle del inventario")
     fila += 1
@@ -160,8 +147,6 @@ def _hoja_general(libro, materiales, unidades):
         hoja.auto_filter.ref = f"A{fila_enc}:{get_column_letter(len(DETALLE))}{fila}"
     _preparar_impresion(hoja)
 
-
-# ---------------------------------------------------- Hoja por unidad ----
 
 def _hoja_unidad(libro, unidad, cajoneras, materiales, usados):
     hoja = libro.create_sheet(_nombre_hoja(unidad.codigo, usados))
