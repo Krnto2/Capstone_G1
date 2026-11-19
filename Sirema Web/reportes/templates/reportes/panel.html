@@ -16,12 +16,12 @@
       <div class="detalle">{% if ind.exigibles %}{{ ind.en_plazo }} de {{ ind.exigibles }} en plazo{% else %}Sin datos{% endif %}</div></div>
   </div>
   <div class="col-12 col-sm-6 col-xl-3">
-    <a class="kpi kpi-falla d-block text-decoration-none text-reset" href="#vencidas"><div class="etiqueta">Vencidas</div>
+    <a class="kpi kpi-falla d-block text-decoration-none text-reset" href="{% if 'revision.supervisar' in permisos %}{% url 'revisiones:lista' %}?estado=vencida&amp;desde={{ filtros.inicio|date:'Y-m-d' }}&amp;hasta={{ filtros.fin|date:'Y-m-d' }}{% if filtros.unidad %}&amp;unidad={{ filtros.unidad.pk }}{% endif %}{% else %}#vencidas{% endif %}"><div class="etiqueta">Vencidas</div>
       <div class="valor">{{ ind.vencidas|length }}</div>
       <div class="detalle">{{ ind.detalle_vencidas|default:"Ninguna" }}</div></a>
   </div>
   <div class="col-12 col-sm-6 col-xl-3">
-    <a class="kpi kpi-observacion d-block text-decoration-none text-reset" href="#hallazgos"><div class="etiqueta">Hallazgos</div>
+    <a class="kpi kpi-observacion d-block text-decoration-none text-reset" href="{% if 'hallazgo.gestionar' in permisos %}{% url 'revisiones:hallazgos' %}{% else %}#hallazgos{% endif %}"><div class="etiqueta">Hallazgos</div>
       <div class="valor">{{ ind.hallazgos_abiertos|length }}</div>
       <div class="detalle">{{ ind.hallazgos_alta }} de criticidad alta</div></a>
   </div>
